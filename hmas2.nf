@@ -1,11 +1,12 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-params.samples = workflow.launchDir + '/M3235-22-024-sample.txt'
-params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
+// params.samples = workflow.launchDir + '/M3235-22-024-sample.txt'
+// params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
 // params.outdir = workflow.launchDir + '/alter'
-params.outdir = workflow.launchDir + '/alter2'
-params.reads = workflow.launchDir + '/test'
+// params.outdir = workflow.launchDir + '/alter2'
+params.outdir = workflow.launchDir + '/output'
+params.reads = workflow.launchDir + '/data'
 
 Channel
   .fromFilePairs("${params.reads}/*_R{1,2}*.fastq.gz",size: 2)
@@ -29,132 +30,10 @@ Channel
 Channel
     .fromPath(params.primers)
     .splitCsv(header:false, sep:"\t")
-    // .map{row -> tuple(row[1], row[2], row[3])}
-    // .view{ it[0] }
-    // .filter{ it[0] ~/primer.*/ }   doesn't work, unfortunately 
-    // .view()
-    // .view{row -> "${row[1]} - ${row[2]}"}
-    // .view{row -> tuple(row[1], row[2], row[3])}
     .set{primer_ch}
 
-// sample_ch
-//     .combine(primer_ch)
-//     // .view()
-//     // .set{sample_primers_ch}
-//     .combine(paired_reads, by:0)
-//     // .view()
-//     .set{sample_primers_reads_ch}
-
-// sample_ch
-//     .combine(paired_reads, by:0)
-//     .view()
-//     .set{sample_reads_ch}
 
 process cutadapt {
-    publishDir "${params.outdir}", mode: 'copy'
-    tag "${sample}"
-    echo true
-    cpus 24
-    container 'dceoy/cutadapt:latest'
-
-    input:
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads) from sample_primers_reads_ch
-    tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads)
-
-    output:
-    // file("cutadapt/*.fastq") optional true into cutadapt_ch
-    file("cutadapt/*.fastq") optional true
-
-    shell:
-    '''
-    mkdir -p cutadapt
-
-    cutadapt -a !{key}=^!{fprimer}...!{rc_rprimer} -A !{key}=^!{rprimer}...!{rc_fprimer} \
-             -o cutadapt/!{sample}_!{key}.1.fastq -p cutadapt/!{sample}_!{key}.2.fastq \
-             !{reads[0]} !{reads[1]} \
-             --rename='{id} ={adapter_name} {comment}' \
-             --quiet --discard-untrimmed -e 0 -m 1 -j 1
-
-    '''
-
-}
-
-process cutadapt_2 {
-    publishDir "${params.outdir}", mode: 'copy'
-    tag "${sample_reads[0]}"
-    echo true
-    cpus 24
-    container 'dceoy/cutadapt:latest'
-
-    input:
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads) from sample_primers_reads_ch
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads)
-    each sample_reads
-    tuple val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key)
-    
-    output:
-    // file("cutadapt/*.fastq") optional true into cutadapt_ch
-    file("cutadapt/*.fastq") optional true
-
-    shell:
-    '''
-    mkdir -p cutadapt
-
-    sample=!{sample_reads[0]}
-    reads=!{sample_reads[1]}
-
-    cutadapt -a !{key}=^!{fprimer}...!{rc_rprimer} -A !{key}=^!{rprimer}...!{rc_fprimer} \
-             -o cutadapt/${sample}_!{key}.1.fastq -p cutadapt/${sample}_!{key}.2.fastq \
-             ${reads[0]} ${reads[1]} \
-             --rename='{id} ={adapter_name} {comment}' \
-             --quiet --discard-untrimmed -e 0 -m 1 -j 1
-
-    '''
-
-}
-
-
-process cutadapt_3 {
-    publishDir "${params.outdir}", mode: 'copy'
-    tag "${sample}"
-    // echo true
-    cpus 24
-    // container 'dceoy/cutadapt:latest'
-
-    input:
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads) from sample_primers_reads_ch
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads)
-    each primers
-    // tuple val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key)
-    tuple val(sample), path(reads)
-    
-    output:
-    // file("cutadapt/*.fastq") optional true into cutadapt_ch
-    // tuple val(sample), file("cutadapt/*.fastq") optional true
-    tuple val(sample), path ("cutadapt/*.fastq") optional true
-
-    shell:
-    '''
-    mkdir -p cutadapt
-
-    fprimer=!{primers[0]}
-    rprimer=!{primers[1]}
-    rc_fprimer=!{primers[2]}
-    rc_rprimer=!{primers[3]}
-    key=!{primers[4]}
-
-    cutadapt -a ${key}=^${fprimer}...${rc_rprimer} -A ${key}=^${rprimer}...${rc_fprimer} \
-             -o cutadapt/!{sample}_${key}.1.fastq -p cutadapt/!{sample}_${key}.2.fastq \
-             !{reads[0]} !{reads[1]} \
-             --rename='{id} ={adapter_name}  {comment}' \
-             --quiet --discard-untrimmed -e 0 -m 1 -j 1
-
-    '''
-
-}
-
-
-process cutadapt_4 {
     // publishDir "${params.outdir}", mode: 'copy'
     tag "${sample}"
     // echo true
@@ -166,16 +45,9 @@ process cutadapt_4 {
     maxRetries 3
 
     input:
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads) from sample_primers_reads_ch
-    // tuple val(sample), val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key), file(reads)
-    // each primers
-    // tuple val(fprimer), val(rprimer), val(rc_fprimer), val(rc_rprimer), val(key)
     tuple val(sample), path(reads)
     
     output:
-    // file("cutadapt/*.fastq") optional true into cutadapt_ch
-    // tuple val(sample), file("cutadapt/*.fastq") optional true
-    // tuple val(sample), path ("cutadapt/${sample}.*.fastq") optional true
     tuple val(sample), path ("cutadapt/${sample}*.1.fastq"), path ("cutadapt/${sample}*.2.fastq")
 
     shell:
@@ -194,12 +66,10 @@ process concat_reads {
     // debug true
 
     input:
-    // tuple val(sample), path ("*.fastq")
     tuple val(sample), path (reads1), path (reads2)
 
     output:
     tuple val(sample), path ("${sample}.1.fastq"), path ("${sample}.2.fastq")
-    // tuple val(sample), path ("${sample}.fastq")
 
     shell:
     '''
@@ -245,7 +115,6 @@ process quality_filtering {
     path ("*.fastq")
 
     output:
-    // path ("output.fastq")
     path ("output.fasta")
 
     shell:
@@ -343,14 +212,8 @@ process make_count_table {
 }
 
 workflow {
-    // cutadapt(sample_primers_reads_ch)
-    // cutadapt_2(paired_reads, primer_ch)
-    //word_count(cutadapt_3(primer_ch, paired_reads).collect())
-    // removed_primer_reads_ch = cutadapt_4(paired_reads).collect()
     removed_primer_reads_ch = cutadapt_4(paired_reads)
     clean_reads_ch = concat_reads(removed_primer_reads_ch)
-    // concat_reads(removed_primer_reads_ch2)
-    // merged_reads_ch = pair_merging(paired_reads2).collect()
     merged_reads_ch = pair_merging(clean_reads_ch).collect()
     filered_reads_ch = quality_filtering(merged_reads_ch)
     unique_reads_ch = dereplication(filered_reads_ch)
