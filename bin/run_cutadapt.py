@@ -2,7 +2,7 @@
 import sys, os, shutil, subprocess, argparse
 from datetime import datetime
 import concurrent.futures
-import utilities, settings
+import utilities
 import pandas as pd
 from os.path import isfile
 from os import access, R_OK
@@ -47,17 +47,19 @@ def run_cutadapt(command):
 def parse_argument():
     # note
     # the script can be run as: python3 run_cutadapt.py -f read1.fq.gz -r read2.fg.gz -o out_dir
-    #
+    #													-s sample -p oligo_file
+    # oligo_file contains the primer information
     parser = argparse.ArgumentParser(prog = 'run_cutadapt.py')
     parser.add_argument('-f', '--read1', metavar = '', required = True, help = 'Specify R1 read')
     parser.add_argument('-r', '--read2', metavar = '', required = True, help = 'Specify R2 read')
     parser.add_argument('-o', '--out_dir', metavar = '', required = True, help = 'Specify output folder')
     parser.add_argument('-s', '--sample', metavar = '', required = True, help = 'Specify sample name')
+    parser.add_argument('-p', '--oligo_file', metavar = '', required = True, help = 'Specify oligo file')
     
     return parser.parse_args()
 
 
-def remove_primer(sample,R1_gz,R2_gz,out_dir,num_process):
+def remove_primer(sample,R1_gz,R2_gz,out_dir,num_process, oligo_file):
 	"""
 	TO DO...   add descriptions here...
 
@@ -76,7 +78,7 @@ def remove_primer(sample,R1_gz,R2_gz,out_dir,num_process):
 
 	#1. prep for cutadapt commands
 	cutadapt_commands = []
-	primers = utilities.Primers(settings.OLIGO_FILE)
+	primers = utilities.Primers(oligo_file)
 	cutadapt_cmd = cmd_exists('cutadapt')
 	for key in primers.pseqs:
 		fprimer = primers.pseqs[key][0]
@@ -92,7 +94,8 @@ def remove_primer(sample,R1_gz,R2_gz,out_dir,num_process):
 			# f'{sample}.{key}.1.fastq', '-p', 
    			# f'{sample}.{key}.2.fastq',
 			R1_gz, R2_gz,
-			f"--rename='{{id}}  adapter={{adapter_name}} {{comment}}'",
+			# f"--rename='{{id}}  adapter={{adapter_name}} {{comment}}'",
+			f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
        		'--quiet', '--discard-untrimmed', '-e', '0', '-m', '1', '-j', '1'])
     
     
@@ -110,51 +113,24 @@ def remove_primer(sample,R1_gz,R2_gz,out_dir,num_process):
 
 
 
-def main():
-    
-    args = parse_argument()
+def main(args):
     
     R1_gz = args.read1
     R2_gz = args.read2
     out_dir = args.out_dir
     sample = args.sample
     
-    remove_primer(sample,R1_gz,R2_gz,out_dir,20)
+    remove_primer(sample,R1_gz,R2_gz,out_dir,20, args.oligo_file)
             
             
 if __name__ == "__main__":
     
-    # settings.OLIGO_FILE is set in my local folder, you might need to update it
-    if isfile(settings.OLIGO_FILE) and access(settings.OLIGO_FILE, R_OK):
-        main()
+    args = parse_argument()
+    oligo_file = args.oligo_file
+    
+    if isfile(oligo_file) and access(oligo_file, R_OK):
+        main(args)
     else:
-        print (f"{settings.OLIGO_FILE} does not exist or is not readable" \
+        print (f"{oligo_file} does not exist or is not readable" \
             	", please check it in the settings.py file ")
         sys.exit()
-    
-def create_primer_revcomp(primer_file):
-    """
-	This method read the oligos file and extract all the primer sequences and 
-	write a new primer file, consisting of 5 columns (tab delimited)
-	f-primer r-primer rc-f-primer rc-r-primer primer_name
-
-	Params
-	------
-	primer_file: the path for the new primer file
-
-	"""
-    primers = utilities.Primers(settings.OLIGO_FILE)
-    primers_list = []
-    for key in primers.pseqs:
-        fprimer = primers.pseqs[key][0]
-        rc_fprimer = utilities.revcomp(fprimer)
-        rc_rprimer = primers.pseqs[key][1]
-        rprimer = utilities.revcomp(rc_rprimer)
-        primers_list.append(f"{fprimer}\t{rprimer}\t{rc_fprimer}\t{rc_rprimer}\t{key}")
-        
-    with open (primer_file, 'w') as f:
-        f.write('\n'.join(primers_list) + '\n')
-        
-
-# primer_file = '/scicomp/home-pure/qtl7/test/hmas_test/024_demulx_0mis_data/M3235_22_024.primers'
-# create_primer_revcomp(primer_file)

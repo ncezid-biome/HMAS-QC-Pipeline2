@@ -3,6 +3,7 @@
 import pandas as pd
 import datetime
 import argparse
+import os, sys
 
 '''
 This script will generat a mothur_equivalent full format count_table file.
@@ -38,6 +39,12 @@ def main():
     matched_file = args.match_file
     output_file = args.output_file
     #fasta_file = 'output.fasta'
+    
+    if os.path.getsize(matched_file) <= 0:
+        print (f"{matched_file} is empty" \
+            	", indicating the raw reads are most likely bad" \
+                 ", and all generated seqs has abundance less than 10")
+        sys.exit()
 
     # df = pd.read_csv(f'{file_dir}/{matched_file}', sep='\t', names = ['target', 'query'])
     df = pd.read_csv(f'{matched_file}', sep='\t', names = ['target', 'query'])

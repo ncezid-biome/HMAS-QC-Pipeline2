@@ -1,12 +1,10 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// params.samples = workflow.launchDir + '/M3235-22-024-sample.txt'
 // params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
-// params.outdir = workflow.launchDir + '/alter'
-// params.outdir = workflow.launchDir + '/alter2'
 params.outdir = workflow.launchDir + '/output'
 params.reads = workflow.launchDir + '/data'
+params.oligo = workflow.launchDir + '/data' + '/M3235_22_024.oligos'
 
 Channel
   .fromFilePairs("${params.reads}/*_R{1,2}*.fastq.gz",size: 2)
@@ -14,29 +12,21 @@ Channel
 //   .view()
   .set { paired_reads }
 
-Channel
-  .fromFilePairs("${params.reads}/*.{1,2}.fastq",size: 2)
-//   .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
-//    .view()
-  .set { paired_reads2 }
+// Channel
+//   .fromFilePairs("${params.reads}/*.{1,2}.fastq",size: 2)
+// //   .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
+// //    .view()
+//   .set { paired_reads2 }
 
-Channel
-    .fromPath(params.samples)
-    .splitCsv(header:false, sep:"\t")
-    // .flatten()
-    // .view{it}
-    .set{sample_ch}
-
-Channel
-    .fromPath(params.primers)
-    .splitCsv(header:false, sep:"\t")
-    .set{primer_ch}
+// Channel
+//     .fromPath(params.primers)
+//     .splitCsv(header:false, sep:"\t")
+//     .set{primer_ch}
 
 
 process cutadapt {
     // publishDir "${params.outdir}", mode: 'copy'
     tag "${sample}"
-    // echo true
     cpus 20
     memory = 2.GB
     // container 'dceoy/cutadapt:latest'
@@ -54,7 +44,7 @@ process cutadapt {
     '''
     mkdir -p cutadapt
     python !{workflow.projectDir}/bin/run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
-                                     -o cutadapt -s !{sample}
+                                     -o cutadapt -s !{sample} -p !{params.oligo}
 
     '''
 
@@ -86,7 +76,6 @@ process pair_merging {
     cpus = 5
 
     input:
-    // tuple val(sample), path(reads)
     tuple val(sample), path(reads1), path(reads2)
 
     output:
@@ -94,15 +83,8 @@ process pair_merging {
 
     shell:
     '''
-    #pear -f ${reads[0]} -r ${reads[1]} -o ${sample} -q 26 -m 325 -v 20 -j 20
     pear -f !{reads1} -r !{reads2} -o !{sample} -q 26 -m 325 -v 20 -j 20
     mv !{sample}.assembled.fastq !{sample}.fastq
-
-    #removed the annoying ' character in primer_removing step
-    sed -i "s/'//g" !{sample}.fastq 
-
-    #don't need this if we already have sample name appended to seq_id
-    add_samplename.sh !{sample}.fastq !{sample}
 
     '''
 }
@@ -206,13 +188,13 @@ process make_count_table {
     shell:
     '''
     python !{workflow.projectDir}/bin/make_count_table.py -o final.count_table -m !{match_file}
-    #python3 make_count_table.py -o final.count_table -m !{match_file}
+
     '''
 
 }
 
 workflow {
-    removed_primer_reads_ch = cutadapt_4(paired_reads)
+    removed_primer_reads_ch = cutadapt(paired_reads)
     clean_reads_ch = concat_reads(removed_primer_reads_ch)
     merged_reads_ch = pair_merging(clean_reads_ch).collect()
     filered_reads_ch = quality_filtering(merged_reads_ch)
