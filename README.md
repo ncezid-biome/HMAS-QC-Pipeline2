@@ -9,7 +9,7 @@ An alternative pipeline for doing initial quality control of highly-multiplexed 
 * [Requirements](#requirements)
 * [INSTALL](#install)
 * [USAGE](#usage)
-* [Workflow](#workflow)
+* [Workflow](#workflow)  
 
 ## Description
 
@@ -60,12 +60,15 @@ _note_: the output folder will hold the _final.unique.fasta_, _final.count_table
 3. If you haven't installed those required packages and if have access to Scicomp, you can module load all of them. Otherwise, you can create a conda env with our provided yaml file. For that, you will run the following:   
     1. `conda env create -n hmas -f bin/hmas.yaml` (if you have mamba installed, use `mamba env create` instead for speed)   
     2.  `conda activate hmas`  
+>**Note**: We didn't use singularity container at this time because:  
+> 1. I can't find some docker images (i.e. PEAR)
+> 2. nextflow only allows 1 container image per process (and we need more than 1 for some processes)   
 4. Run the following:  
 `nextflow run hmas2.nf`    
 
    
 
-## Worflow  
+## Workflow 
 
 ```mermaid
 flowchart TD
