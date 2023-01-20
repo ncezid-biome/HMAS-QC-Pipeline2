@@ -1,0 +1,11 @@
+name: hmas
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - pandas
+  - cutadapt=3.5
+  - pear
+  - vsearch
