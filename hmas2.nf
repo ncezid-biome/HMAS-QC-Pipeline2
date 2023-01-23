@@ -104,9 +104,11 @@ process quality_filtering {
     cat *.fastq >> output.fastq
     vsearch --fastx_filter output.fastq --fastq_maxee 1 --fastaout output.fasta
 
-    #remove space between seq_id and =adapter
-    sed -r -i 's/\s+adapter=/=/g' output.fasta
-
+    #remove space between seq_id and =adapter 
+    #choose not to use sed, because it could be very slow
+    #sed -r -i 's/\s+adapter=/=/g' output.fasta
+    python !{workflow.projectDir}/bin/remove_space.py -f output.fasta
+    
     '''
 
 }
