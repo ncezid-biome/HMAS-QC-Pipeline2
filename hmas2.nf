@@ -2,7 +2,8 @@
 nextflow.enable.dsl=2
 
 // params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
-params.outdir = workflow.launchDir + '/output'
+params.outdir = workflow.launchDir + '/output_samplebase'
+// params.reads = workflow.launchDir
 params.reads = workflow.launchDir + '/data'
 params.oligo = workflow.launchDir + '/data' + '/M3235_22_024.oligos'
 
@@ -43,9 +44,10 @@ process cutadapt {
     shell:
     '''
     mkdir -p cutadapt
-    python !{workflow.projectDir}/bin/run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
+    #python !{workflow.projectDir}/bin/run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
+    #                                 -o cutadapt -s !{sample} -p !{params.oligo}
+    run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
                                      -o cutadapt -s !{sample} -p !{params.oligo}
-
     '''
 
 }
@@ -79,7 +81,8 @@ process pair_merging {
     tuple val(sample), path(reads1), path(reads2)
 
     output:
-    path ("${sample}.fastq")
+    // path ("${sample}.fastq")
+    tuple val(sample), path ("${sample}.fastq")
 
     shell:
     '''
@@ -91,41 +94,47 @@ process pair_merging {
 
 process quality_filtering {
     publishDir "${params.outdir}", mode: 'copy'
-    tag "quality_filtering"
+    // tag "quality_filtering"
+    tag "${sample}"
 
     input:
-    path ("*.fastq")
+    // path ("*.fastq")
+    tuple val(sample), path (fastq)
 
     output:
-    path ("output.fasta")
+    // path ("output.fasta")
+    tuple val(sample), path ("${sample}.fasta")
 
     shell:
     '''
-    cat *.fastq >> output.fastq
-    vsearch --fastx_filter output.fastq --fastq_maxee 1 --fastaout output.fasta
+    #cat *.fastq >> output.fastq
+    vsearch --fastx_filter !{fastq} --fastq_maxee 1 --fastaout !{sample}.fasta
 
     #remove space between seq_id and =adapter 
     #choose not to use sed, because it could be very slow
     #sed -r -i 's/\s+adapter=/=/g' output.fasta
-    python !{workflow.projectDir}/bin/remove_space.py -f output.fasta
-    
+    #python !{workflow.projectDir}/bin/remove_space.py -f output.fasta
+
+    remove_space.py -f !{sample}.fasta
     '''
 
 }
 
 process dereplication {
     publishDir "${params.outdir}", mode: 'copy'
-    tag "dereplication"
+    // tag "dereplication"
+    tag "${sample}"
 
     input:
-    path (fasta)
+    tuple val(sample), path (fasta)
 
     output:
-    path ("unique.fasta")
+    // path ("unique.fasta")
+    tuple val(sample), path ("${sample}.unique.fasta")
 
     shell:
     '''
-    vsearch --derep_fulllength !{fasta} --output unique.fasta --sizeout --relabel_keep
+    vsearch --derep_fulllength !{fasta} --output !{sample}.unique.fasta --sizeout --relabel_keep
 
     '''
 
@@ -133,20 +142,21 @@ process dereplication {
 
 process denoising {
     publishDir "${params.outdir}", mode: 'copy'
-    tag "denoising"
+    // tag "denoising"
+    tag "${sample}"
     // debug true
     cpus = 3
 
     input:
-    path (fasta)
+    tuple val(sample), path (fasta)
 
     output:
-    path ("final.unique.fasta")
+    tuple val(sample), path ("${sample}.final.unique.fasta")
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize 10 --unoise_alpha 2 --centroids unique.unoise.fasta
-    vsearch --uchime3_denovo unique.unoise.fasta --nonchimeras final.unique.fasta
+    vsearch --cluster_unoise !{fasta} --minsize 4 --unoise_alpha 2 --centroids !{sample}.unique.unoise.fasta
+    vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
 
     '''
 
@@ -155,20 +165,22 @@ process denoising {
 
 process search_exact {
     publishDir "${params.outdir}", mode: 'copy'
-    tag "searching for exact seqs"
+    // tag "searching for exact seqs"
+    tag "${sample}"
     cpus = 6
 
     input:
-    path (final_unique_fasta)
-    path (output_fasta)
+    // path (final_unique_fasta)
+    // path (output_fasta)
+    tuple val(sample), path (output_fasta), path (final_unique_fasta)
 
     output:
-    path ("output.match.final.txt")
+    tuple val(sample), path ("${sample}.output.match.final.txt")
 
     shell:
     '''
     vsearch --search_exact !{output_fasta} -db !{final_unique_fasta} \
-            --userfields target+query --userout  output.match.final.txt
+            --userfields target+query --userout  !{sample}.output.match.final.txt
 
     '''
 
@@ -176,20 +188,23 @@ process search_exact {
 
 process make_count_table {
     publishDir "${params.outdir}", mode: 'copy'
-    tag "generating abundance table"
+    // tag "generating abundance table"
+    tag "${sample}"
     // debug true
     cpus = 2
     memory = 16.GB
 
     input:
-    path (match_file)
+    tuple val(sample), path (match_file)
 
     output:
-    path ("final.count_table.*")
+    path ("${sample}.final.count_table.*")
+    path ("${sample}.final.count_table")
 
     shell:
     '''
-    python !{workflow.projectDir}/bin/make_count_table.py -o final.count_table -m !{match_file}
+    #python !{workflow.projectDir}/bin/make_count_table.py -o final.count_table -m !{match_file}
+    make_count_table.py -o !{sample}.final.count_table -m !{match_file}
 
     '''
 
@@ -198,10 +213,14 @@ process make_count_table {
 workflow {
     removed_primer_reads_ch = cutadapt(paired_reads)
     clean_reads_ch = concat_reads(removed_primer_reads_ch)
-    merged_reads_ch = pair_merging(clean_reads_ch).collect()
+    // merged_reads_ch = pair_merging(clean_reads_ch).collect()
+    merged_reads_ch = pair_merging(clean_reads_ch)
     filered_reads_ch = quality_filtering(merged_reads_ch)
     unique_reads_ch = dereplication(filered_reads_ch)
     denoisded_reads_ch = denoising(unique_reads_ch)
-    match_file_ch = search_exact(denoisded_reads_ch,filered_reads_ch)
+
+    before_search_ch = filered_reads_ch.join(denoisded_reads_ch)
+    // match_file_ch = search_exact(denoisded_reads_ch,filered_reads_ch)
+    match_file_ch = search_exact(before_search_ch)
     make_count_table(match_file_ch)
 }

@@ -116,6 +116,7 @@ def main():
 
     # pd.to_pickle(df, f"{file_dir}/024_not_mothur_count_table_2.pkl") 
     pd.to_pickle(df, f"{output_file}.pkl") 
+    df.to_csv(f"{output_file}", index=False, sep='\t')
 
 if __name__ == "__main__":
     main()
