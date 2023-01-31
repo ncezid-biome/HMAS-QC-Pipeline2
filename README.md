@@ -1,4 +1,4 @@
-# HMAS-QC-Pipeline2
+# HMAS-QC-Pipeline2 (sample based)
 
 An alternative pipeline for doing initial quality control of highly-multiplexed amplicon sequencing data.
 
@@ -76,10 +76,10 @@ flowchart TD
     p10[cutadapt]
     p11[concat_reads]
     p12[pair_merging]
-    p13([collect])
-    p14[quality_filtering]
-    p15[dereplication]
-    p16[denoising]
+    p13[quality_filtering]
+    p14[dereplication]
+    p15[denoising]
+    p16([join])
     p17[search_exact]
     p18[make_count_table]
     p19((final<hr>count_table ))
@@ -88,12 +88,12 @@ flowchart TD
     p10 --> |sample.*.1.fastq, sample.*.2.fastq| p11
     p11 --> |sample.1.fastq, sample.2.fastq|p12
     p12 --> |sample.fastq| p13
-    p13 -->|merged_reads_ch| p14
-    p14 --> |output_fasta| p15
-    p15 --> |unique.fasta|p16
-    p16 --> |final.unique.fasta|p17
-    p14 -->|output_fasta| p17
+    p13 --> |output_fasta| p14
+    p14 --> |unique.fasta|p15
+    p15 --> |final.unique.fasta|p16
+    p13 --> |output_fasta| p16
+    p16 --> p17
     p17 --> |output.match.txt| p18
     p18 --> p19
-    p16 --> p20
+    p15 --> p20
 ```
