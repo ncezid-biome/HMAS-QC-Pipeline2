@@ -155,7 +155,7 @@ process denoising {
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize 4 --unoise_alpha 2 --centroids !{sample}.unique.unoise.fasta
+    vsearch --cluster_unoise !{fasta} --minsize 10 --unoise_alpha 2 --centroids !{sample}.unique.unoise.fasta
     vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
 
     '''
@@ -198,14 +198,17 @@ process make_count_table {
     tuple val(sample), path (match_file)
 
     output:
-    path ("${sample}.final.count_table.*")
-    path ("${sample}.final.count_table")
+    path ("${sample}.final.count_table.*"), optional:true
+    path ("${sample}.final.count_table"), optional:true
 
     shell:
     '''
     #python !{workflow.projectDir}/bin/make_count_table.py -o final.count_table -m !{match_file}
-    make_count_table.py -o !{sample}.final.count_table -m !{match_file}
-
+    if [ -s !{match_file} ]; then
+        make_count_table.py -o !{sample}.final.count_table -m !{match_file}
+    else
+        echo "!{match_file} is empty !"
+    fi
     '''
 
 }
