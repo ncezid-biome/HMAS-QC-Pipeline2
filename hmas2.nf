@@ -53,7 +53,7 @@ process cutadapt {
 }
 
 process concat_reads {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     // debug true
 
@@ -73,9 +73,9 @@ process concat_reads {
 }
 
 process pair_merging {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
-    cpus = 5
+    cpus = 18
 
     input:
     tuple val(sample), path(reads1), path(reads2)
@@ -93,7 +93,7 @@ process pair_merging {
 }
 
 process quality_filtering {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "quality_filtering"
     tag "${sample}"
 
@@ -121,7 +121,7 @@ process quality_filtering {
 }
 
 process dereplication {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "dereplication"
     tag "${sample}"
 
@@ -141,7 +141,7 @@ process dereplication {
 }
 
 process denoising {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "denoising"
     tag "${sample}"
     // debug true
@@ -164,10 +164,10 @@ process denoising {
 
 
 process search_exact {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "searching for exact seqs"
     tag "${sample}"
-    cpus = 6
+    cpus = 9
 
     input:
     // path (final_unique_fasta)
@@ -187,11 +187,11 @@ process search_exact {
 }
 
 process make_count_table {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "generating abundance table"
     tag "${sample}"
     // debug true
-    cpus = 2
+    cpus = 4
     memory = 16.GB
 
     input:
