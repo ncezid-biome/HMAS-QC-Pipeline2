@@ -102,7 +102,7 @@ flowchart TD
 ## Miscellaneous 
 
 1.  **difference in sequence abundance distribution** (between previous mothur version and current hmas2 version)   
-    - with mothur version, there is a significant peak at the very low end of sequence abundance. Please check out the visualization [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main/documents).    
+    - with mothur version, there is a significant peak at the very low end of sequence abundance. Please check out the visualization [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/sample_base/documents).    
     - And this difference comes from the additional **unoise_alpha** parameter in the denoising step of the hmas2 pipeline. 
     - > **alpha**: determines the threshold level of dissimilarity between frequent and infrequent reads for exclusion of infrequent reads.  
     (Denoising exploits the observation that a low-abundance sequence that is very similar to a 
