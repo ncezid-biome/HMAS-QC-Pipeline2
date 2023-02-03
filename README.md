@@ -1,8 +1,8 @@
 # HMAS-QC-Pipeline2 (sample based)
 
-An alternative pipeline for doing initial quality control of highly-multiplexed amplicon sequencing data.
+An alternative pipeline for doing initial quality control of highly-multiplexed amplicon sequencing data. **This sample based approach takes demultiplexed raw reads for each sample, and generates output file in a separate folder for each sample**
 
- [the original HMAS QC Pipeline](https://github.com/ncezid-biome/HMAS-QC-Pipeline)
+ [the HMAS2 QC Pipeline](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main)
 
 ## TOC
 * [Description](#description)
@@ -10,12 +10,13 @@ An alternative pipeline for doing initial quality control of highly-multiplexed 
 * [INSTALL](#install)
 * [USAGE](#usage)
 * [Workflow](#workflow)  
+* [miscellaneous](#miscellaneous)  
 
 ## Description
 
 This is a pipeline that performs quality control analysis on highly-multiplexed amplicon sequencing (HMAS) data.
 The pipeline is implemented in nextflow with some python and shell scripts. The input of the pipeline is demultiplexed fastq files (gzipped or not) for each sample. If you have multiplexed fastq files, you can run bcl2fastq for demultiplexing. 
-It provides 2 main outputs of interest: 
+It provides 2 main outputs of interest (**for each sample**): 
 
 1. A **fasta** file containing the high-quality representative unique sequences after cleaning
 2. A **count_table** file containing the abundance information of the above fasta file   
@@ -96,4 +97,13 @@ flowchart TD
     p17 --> |output.match.txt| p18
     p18 --> p19
     p15 --> p20
-```
+```  
+
+## Miscellaneous 
+
+1.  **difference in sequence abundance distribution** (between previous mothur version and current hmas2 version)   
+    - with mothur version, there is a significant peak at the very low end of sequence abundance. Please check out the visualization [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main/documents).    
+    - And this difference comes from the additional **unoise_alpha** parameter in the denoising step of the hmas2 pipeline. 
+    - > **alpha**: determines the threshold level of dissimilarity between frequent and infrequent reads for exclusion of infrequent reads.  
+    (Denoising exploits the observation that a low-abundance sequence that is very similar to a 
+high-abundance sequence is likely to be an error.)
