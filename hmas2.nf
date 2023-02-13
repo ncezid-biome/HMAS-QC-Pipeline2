@@ -145,7 +145,7 @@ process denoising {
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize 10 --unoise_alpha 2 --centroids unique.unoise.fasta
+    vsearch --cluster_unoise !{fasta} --minsize 10 --unoise_alpha 20 --centroids unique.unoise.fasta
     vsearch --uchime3_denovo unique.unoise.fasta --nonchimeras final.unique.fasta
 
     '''
