@@ -2,9 +2,11 @@
 nextflow.enable.dsl=2
 
 // params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
-params.outdir = workflow.launchDir + '/output_samplebase'
-// params.reads = workflow.launchDir
+// params.outdir = workflow.launchDir + '/output_samplebase_24_mergepair'
+// params.outdir = workflow.launchDir + '/output_samplebase_24_M3235_23_008'
+params.reads = workflow.launchDir
 params.reads = workflow.launchDir + '/data'
+// params.reads = '/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_QC_pipeline/M3235_23_008/raw_seqs'
 params.oligo = workflow.launchDir + '/data' + '/M3235_22_024.oligos'
 
 Channel
@@ -88,6 +90,8 @@ process pair_merging {
     '''
     pear -f !{reads1} -r !{reads2} -o !{sample} -q 26 -m 325 -v 20 -j 20
     mv !{sample}.assembled.fastq !{sample}.fastq
+    #vsearch -fastq_mergepairs !{reads1} -reverse !{reads2} -fastqout !{sample}.fastq \
+    #                --fastq_maxns 0 --fastq_minovlen 20 --fastq_maxdiffs 20 --fastq_maxmergelen 325
 
     '''
 }
@@ -155,7 +159,7 @@ process denoising {
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize 10 --unoise_alpha 2 --centroids !{sample}.unique.unoise.fasta
+    vsearch --cluster_unoise !{fasta} --minsize 2 --unoise_alpha 4 --centroids !{sample}.unique.unoise.fasta
     vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
 
     '''
@@ -190,7 +194,7 @@ process make_count_table {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "generating abundance table"
     tag "${sample}"
-    // debug true
+    debug true
     cpus = 4
     memory = 16.GB
 
@@ -198,14 +202,14 @@ process make_count_table {
     tuple val(sample), path (match_file)
 
     output:
-    path ("${sample}.final.count_table.*"), optional:true
-    path ("${sample}.final.count_table"), optional:true
+    path ("${sample}.final.count_table"), emit:count, optional:true
+    path ("${sample}.csv"), emit:report, optional:true
 
     shell:
     '''
-    #python !{workflow.projectDir}/bin/make_count_table.py -o final.count_table -m !{match_file}
     if [ -s !{match_file} ]; then
         make_count_table.py -o !{sample}.final.count_table -m !{match_file}
+        create_report.py -s !{sample} -c !{sample}.final.count_table -p !{params.oligo} -o !{sample}
     else
         echo "!{match_file} is empty !"
     fi
@@ -213,17 +217,40 @@ process make_count_table {
 
 }
 
+process combine_reports {
+    publishDir "${params.outdir}", mode: 'copy'
+    tag "combine reports"
+    debug true
+
+    input:
+    path (reports_file)
+
+    output:
+    path ("report.csv"), optional:true
+
+    shell:
+    '''
+    #!{reports_file} is passed in as a string (sapce delimited) concatenation of all sample.csv file
+    # Ex.  sample1.csv sample2.csv sample3.csv 
+    # which will then be split by the script to read each csv file
+    combine_reports.py -o report.csv -p "!{reports_file}"
+
+    '''
+
+}
+
 workflow {
     removed_primer_reads_ch = cutadapt(paired_reads)
     clean_reads_ch = concat_reads(removed_primer_reads_ch)
-    // merged_reads_ch = pair_merging(clean_reads_ch).collect()
     merged_reads_ch = pair_merging(clean_reads_ch)
     filered_reads_ch = quality_filtering(merged_reads_ch)
     unique_reads_ch = dereplication(filered_reads_ch)
     denoisded_reads_ch = denoising(unique_reads_ch)
-
     before_search_ch = filered_reads_ch.join(denoisded_reads_ch)
-    // match_file_ch = search_exact(denoisded_reads_ch,filered_reads_ch)
     match_file_ch = search_exact(before_search_ch)
-    make_count_table(match_file_ch)
+    // collectFile will instead concatenate all the file contents and write it into a single file
+    // which is not what we want.  We want to read each file separately, for all the files
+    reports_file_ch = make_count_table(match_file_ch).report.collect()
+    combine_reports(reports_file_ch)
 }
+
