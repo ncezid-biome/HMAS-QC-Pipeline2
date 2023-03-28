@@ -50,16 +50,17 @@ def report(sample, count_file, oligos_file, report_file):
     report_df['mean'] = report_df.fillna(0).mean(axis=1).apply(lambda x:(round(x,1)))
     report_df['failed_pp'] = report_df.isna().sum(axis=1).apply(lambda x: x+all_failed_pp_count)
     report_df['perc_successful_pp'] = round(1 - report_df['failed_pp']/total_primer_count, 3)
-    report_df['failed_pp'] = report_df['failed_pp'].apply(lambda x: f" {x} / {total_primer_count}")
+    # report_df['failed_pp'] = report_df['failed_pp'].apply(lambda x: f" {x} / {total_primer_count}")
+    report_df['good_pp'] = report_df['failed_pp'].apply(lambda x: f" {total_primer_count-x} / {total_primer_count}")
     
-    report_df = report_df[['mean','perc_successful_pp','failed_pp']]
+    report_df = report_df[['mean','perc_successful_pp','good_pp']]
     #add 'Mean read depth across entire run' as a separate line at the end
     ### don't need this for this single sample report
     # report_df.loc['Mean read depth across entire run'] = [int(round(report_df['mean'].mean(),0)),None,None]
     
     report_columns = [f'Mean read depth',
                       f'% of successful primer-pairs\n(has at least 2 amplicons in the sample)',
-                      f'# of primer pairs with less than 2 amplicons mapping\nover total primer-pairs']
+                      f'# of primer pairs with more than 2 amplicons mapping\nover total primer-pairs']
     report_df.columns = report_columns
     
     report_df.to_csv(f'{report_file}.csv')
