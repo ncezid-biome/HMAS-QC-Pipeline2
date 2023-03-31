@@ -52,18 +52,18 @@ def main():
     unique_seqs = list(set(df['target'].to_list()))
 
     df['query'] = df.groupby(['target'])['query'].transform(lambda x: ','.join(x))
-    print (df.head())
-    print (df.shape)
+    # print (df.head())
+    # print (df.shape)
 
     #dictionary (key: unique representative seqs; value: list of its represented seqs)
     seq_seq_dict = dict(df.values)
-    print (len(seq_seq_dict))
+    # print (len(seq_seq_dict))
     # for key in list(seq_seq_dict.keys())[:2]:
     #     print (seq_seq_dict[key])
 
     #dictionary (key: unique representative seqs; value: list of the sample.primer pairs of its represented seqs)
     seq_sp_dict = {key:[get_sample_primer(seq) for seq in seq_seq_dict[key].split(',')] for key in seq_seq_dict}
-    print (len(seq_sp_dict))
+    # print (len(seq_sp_dict))
     # for key in list(seq_sp_dict.keys())[:2]:
     #     print (seq_sp_dict[key])
 
@@ -73,27 +73,27 @@ def main():
 
     #list of sets (of sample-primer for each unique seqs)
     sp_sets = [set(item) for item in seq_sp_dict.values()]
-    print (len(sp_sets))
-    for ss in sp_sets[:2]:
-        print (ss)
+    # print (len(sp_sets))
+    # for ss in sp_sets[:2]:
+    #     print (ss)
 
     #this is the total sample-primer pairs in the count_table
     sps = list(set.union(*sp_sets))
     sps.sort()
-    print (len(sps))
+    # print (len(sps))
 
 
-    print (f"before start...{datetime.datetime.now()}")
+    # print (f"before start...{datetime.datetime.now()}")
     #making the rows of the count_table, which is a dictionary of:
     #key: unique seqs; value: list of counts for each sample-primer pair
     occurrence = {seq: [seq_sp_dict[seq].count(sp) for sp in sps] 
                 for seq in unique_seqs}
 
-    print (len(occurrence))
-    print (unique_seqs[:20])
+    # print (len(occurrence))
+    # print (unique_seqs[:20])
     # print (occurrence.keys())
-    for key in list(occurrence.keys())[:20]:
-        print (key, occurrence[key])
+    # for key in list(occurrence.keys())[:20]:
+    #     print (key, occurrence[key])
 
     df = pd.DataFrame.from_dict(occurrence, orient='index')
     df.columns = sps
@@ -108,14 +108,14 @@ def main():
     df.rename(columns={'index':'seq'}, inplace=True)
     df['seq'] = df['seq'].apply(str)
 
-    print (df.head().iloc[:5,:5])
+    # print (df.head().iloc[:5,:5])
 
 
-    print (df.shape)
-    print (f"after done... {datetime.datetime.now()}")
+    # print (df.shape)
+    # print (f"after done... {datetime.datetime.now()}")
 
     # pd.to_pickle(df, f"{file_dir}/024_not_mothur_count_table_2.pkl") 
-    pd.to_pickle(df, f"{output_file}.pkl") 
+    # pd.to_pickle(df, f"{output_file}.pkl") 
     df.to_csv(f"{output_file}", index=False, sep='\t')
 
 if __name__ == "__main__":
