@@ -16,11 +16,14 @@ An alternative pipeline for doing initial quality control of highly-multiplexed 
 
 This is a pipeline that performs quality control analysis on highly-multiplexed amplicon sequencing (HMAS) data.
 The pipeline is implemented in nextflow with some python and shell scripts. The input of the pipeline is demultiplexed fastq files (gzipped or not) for each sample. If you have multiplexed fastq files, you can run bcl2fastq for demultiplexing. 
-It provides 2 main outputs of interest (**for each sample**): 
+It provides 3 main outputs of interest (**for each sample**): 
 
 1. A **fasta** file containing the high-quality representative unique sequences after cleaning
 2. A **count_table** file containing the abundance information of the above fasta file   
-**note:** _this count_table file is converted to a python pickle file (.pkl) for fast loading_
+~~**note:** _this count_table file is converted to a python pickle file (.pkl) for fast loading_~~  
+**note:** _this count_table is becoming obsolete because we now embedded abundance information  in the seq_ID in the above fasta file. For example (size=551 is the abundance value for this particular sequence):_    
+`>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`  
+3. A csv report file containing the statistics (mean read depth, successful primer counts, etc.) of the reads for this sample
 
 For more information and to see visualizations describing the workflow, see [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main/documents).
 
@@ -51,11 +54,11 @@ This pipeline has been designed and tested under Linux CentOS and Ubuntu platfor
 
 ## USAGE
 
-1. make sure your paired demultiplexed fastq files (for each sample) are under the **/HMAS-QC-Pipeline2/data** folder. And they have a `*_R{1,2}*.fastq.gz` patern
+1. make sure your paired demultiplexed fastq files (for each sample) are under the **/HMAS-QC-Pipeline2/data** folder. And they have a `*_R{1,2}*.fastq.gz` pattern
 
 
 2. create a  **output** folder under **/HMAS-QC-Pipeline2**   
-_note_: the output folder will hold the _final.unique.fasta_, _final.count_table.pkl_ and a few other intermediary files
+_note_: the output folder contains all the subfolders (one for each sample). And each subfolder holds the _final.unique.fasta_, _final.count_table_, _samplename.csv_ and a few other intermediary files
 
 
 3. If you haven't installed those required packages and if have access to Scicomp, you can module load all of them. Otherwise, you can create a conda env with our provided yaml file. For that, you will run the following:   
@@ -66,6 +69,8 @@ _note_: the output folder will hold the _final.unique.fasta_, _final.count_table
 > 2. nextflow only allows 1 container image per process (and we need more than 1 for some processes)   
 4. Run the following:  
 `nextflow run hmas2.nf`    
+**note:** if you have your input reads and/or your output folder in other than your current working directory, you can override those set in the nextflow script and provide them at the command line, for example:  
+ `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT`
 
    
 

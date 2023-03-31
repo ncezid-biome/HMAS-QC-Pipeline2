@@ -4,28 +4,22 @@ nextflow.enable.dsl=2
 // params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
 // params.outdir = workflow.launchDir + '/output_samplebase_24_mergepair'
 // params.outdir = workflow.launchDir + '/output_samplebase_24_M3235_23_008'
-params.reads = workflow.launchDir
+// params.outdir = workflow.launchDir + '/sampling_rawreads_testresult'
+// params.outdir = workflow.launchDir + '/output_samplebase_24_M3235_23_011'
+// params.reads = workflow.launchDir
+params.outdir = workflow.launchDir + '/output'
 params.reads = workflow.launchDir + '/data'
+// params.reads = '/scicomp/home-pure/qtl7/test/hmas_test/024_demulx_0mis_data/output_sampling_rawreads'
 // params.reads = '/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_QC_pipeline/M3235_23_008/raw_seqs'
+// params.reads = '/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_QC_pipeline/M3235_23_011/raw_seqs'
 params.oligo = workflow.launchDir + '/data' + '/M3235_22_024.oligos'
+// params.oligo = '/scicomp/home-pure/qtl7/HMAS_QC_Pipeline/helper_scripts/remainder_2461.oligos'
 
 Channel
   .fromFilePairs("${params.reads}/*_R{1,2}*.fastq.gz",size: 2)
  .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
 //   .view()
   .set { paired_reads }
-
-// Channel
-//   .fromFilePairs("${params.reads}/*.{1,2}.fastq",size: 2)
-// //   .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
-// //    .view()
-//   .set { paired_reads2 }
-
-// Channel
-//     .fromPath(params.primers)
-//     .splitCsv(header:false, sep:"\t")
-//     .set{primer_ch}
-
 
 process cutadapt {
     // publishDir "${params.outdir}", mode: 'copy'
@@ -77,7 +71,7 @@ process concat_reads {
 process pair_merging {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
-    cpus = 18
+    cpus = 6
 
     input:
     tuple val(sample), path(reads1), path(reads2)
@@ -171,7 +165,7 @@ process search_exact {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
     // tag "searching for exact seqs"
     tag "${sample}"
-    cpus = 9
+    cpus = 6
 
     input:
     // path (final_unique_fasta)
@@ -195,7 +189,7 @@ process make_count_table {
     // tag "generating abundance table"
     tag "${sample}"
     debug true
-    cpus = 4
+    cpus = 3
     memory = 16.GB
 
     input:
