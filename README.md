@@ -77,7 +77,7 @@ _note_: the output folder contains all the subfolders (one for each sample). And
 ## Workflow 
 
 ```mermaid
-flowchart TD
+graph TD
     p0(Channel.fromFilePairs)
     p10[cutadapt]
     p11[concat_reads]
@@ -88,21 +88,53 @@ flowchart TD
     p16([join])
     p17[search_exact]
     p18[make_count_table]
-    p19((final<hr>count_table ))
-    p20((final<hr>unique.fasta))
+    p19((final count_table))
+    p20((final unique.fasta))
+    p21(combined_report)
+    p22([collect])
+    p23((combined_report.csv))
+
     p0 -->|paired_reads| p10
     p10 --> |sample.*.1.fastq, sample.*.2.fastq| p11
-    p11 --> |sample.1.fastq, sample.2.fastq|p12
+    p11 --> |sample.1.fastq, sample.2.fastq| p12
     p12 --> |sample.fastq| p13
-    p13 --> |output_fasta| p14
-    p14 --> |unique.fasta|p15
-    p15 --> |final.unique.fasta|p16
-    p13 --> |output_fasta| p16
+    p13 --> |sample.fasta| p14
+    p14 --> |unique.fasta| p15
+    p15 --> |final.unique.fasta| p16
     p16 --> p17
     p17 --> |output.match.txt| p18
-    p18 --> p19
+    p18 --> |final_count_table| p19
+    p18 --> |report.csv| p22 --> p21 --> p23
     p15 --> p20
+
+    %% Change the positioning
+    %% Group the final output nodes
+    subgraph Final Output 
+        p19
+        p20
+        p23
+    end
+    %% Group the preprocessing nodes
+    subgraph    preprocessing
+        p0
+        p10
+        p11
+        p12
+    end
+    %% Group the processing nodes
+    subgraph          
+        p13
+        p14
+        p15
+        p16
+        p17
+        p18
+        p21
+        p22
+    end
+
 ```  
+**note:** the final.count_table and final.unique.fasta files are per sample based, while combined_report.csv is for the combined report for all the samples in the study.  
 
 ## Miscellaneous 
 
