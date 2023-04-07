@@ -1,33 +1,17 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// params.primers = workflow.launchDir + '/M3235_22_024.primers.test'
-// params.outdir = workflow.launchDir + '/output_samplebase_24_mergepair'
-// params.outdir = workflow.launchDir + '/output_samplebase_24_M3235_23_008'
-// params.outdir = workflow.launchDir + '/sampling_rawreads_testresult'
-// params.outdir = workflow.launchDir + '/output_samplebase_24_M3235_23_011'
-// params.reads = workflow.launchDir
-params.outdir = workflow.launchDir + '/output'
-params.reads = workflow.launchDir + '/data'
-// params.reads = '/scicomp/home-pure/qtl7/test/hmas_test/024_demulx_0mis_data/output_sampling_rawreads'
-// params.reads = '/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_QC_pipeline/M3235_23_008/raw_seqs'
-// params.reads = '/scicomp/groups/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_QC_pipeline/M3235_23_011/raw_seqs'
-params.oligo = workflow.launchDir + '/data' + '/M3235_22_024.oligos'
-// params.oligo = '/scicomp/home-pure/qtl7/HMAS_QC_Pipeline/helper_scripts/remainder_2461.oligos'
 
 Channel
   .fromFilePairs("${params.reads}/*_R{1,2}*.fastq.gz",size: 2)
  .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
-//   .view()
   .set { paired_reads }
 
 process cutadapt {
     // publishDir "${params.outdir}", mode: 'copy'
     tag "${sample}"
-    cpus 20
-    memory = 2.GB
-    // container 'dceoy/cutadapt:latest'
-    // debug true
+    cpus = "${params.maxcpus}"
+    memory = "${params.medmems}"
     errorStrategy 'retry'
     maxRetries 3
 
@@ -40,10 +24,8 @@ process cutadapt {
     shell:
     '''
     mkdir -p cutadapt
-    #python !{workflow.projectDir}/bin/run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
-    #                                 -o cutadapt -s !{sample} -p !{params.oligo}
     run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
-                                     -o cutadapt -s !{sample} -p !{params.oligo}
+                                     -o cutadapt -s !{sample} -p !{params.primer}
     '''
 
 }
@@ -71,19 +53,22 @@ process concat_reads {
 process pair_merging {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
-    cpus = 6
+    cpus = "${params.medcpus}"
 
     input:
     tuple val(sample), path(reads1), path(reads2)
 
     output:
-    // path ("${sample}.fastq")
     tuple val(sample), path ("${sample}.fastq")
 
     shell:
     '''
-    pear -f !{reads1} -r !{reads2} -o !{sample} -q 26 -m 325 -v 20 -j 20
+    pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
+                                                -m !{params.merging_maxlength} \
+                                                -v !{params.merging_minoverlap} -j !{{params.medcpus}}
     mv !{sample}.assembled.fastq !{sample}.fastq
+
+    #using alternative fastq_mergepairs for merging
     #vsearch -fastq_mergepairs !{reads1} -reverse !{reads2} -fastqout !{sample}.fastq \
     #                --fastq_maxns 0 --fastq_minovlen 20 --fastq_maxdiffs 20 --fastq_maxmergelen 325
 
@@ -92,27 +77,20 @@ process pair_merging {
 
 process quality_filtering {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
-    // tag "quality_filtering"
     tag "${sample}"
 
     input:
-    // path ("*.fastq")
     tuple val(sample), path (fastq)
 
     output:
-    // path ("output.fasta")
     tuple val(sample), path ("${sample}.fasta")
 
     shell:
     '''
-    #cat *.fastq >> output.fastq
     vsearch --fastx_filter !{fastq} --fastq_maxee 1 --fastaout !{sample}.fasta
 
     #remove space between seq_id and =adapter 
-    #choose not to use sed, because it could be very slow
-    #sed -r -i 's/\s+adapter=/=/g' output.fasta
-    #python !{workflow.projectDir}/bin/remove_space.py -f output.fasta
-
+    #choose not to use linux sed , because it could be very slow
     remove_space.py -f !{sample}.fasta
     '''
 
@@ -120,14 +98,12 @@ process quality_filtering {
 
 process dereplication {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
-    // tag "dereplication"
     tag "${sample}"
 
     input:
     tuple val(sample), path (fasta)
 
     output:
-    // path ("unique.fasta")
     tuple val(sample), path ("${sample}.unique.fasta")
 
     shell:
@@ -140,10 +116,9 @@ process dereplication {
 
 process denoising {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
-    // tag "denoising"
     tag "${sample}"
     // debug true
-    cpus = 3
+    cpus = "${params.mincpus}"
 
     input:
     tuple val(sample), path (fasta)
@@ -153,7 +128,11 @@ process denoising {
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize 2 --unoise_alpha 4 --centroids !{sample}.unique.unoise.fasta
+    vsearch --cluster_unoise !{fasta} --minsize !{params.denoising_minsize} \
+                                      --unoise_alpha !{params.denoising_alpha} \
+                                      --centroids !{sample}.unique.unoise.fasta
+    
+    #remove potential chimeras
     vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
 
     '''
@@ -163,13 +142,10 @@ process denoising {
 
 process search_exact {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
-    // tag "searching for exact seqs"
     tag "${sample}"
-    cpus = 6
+    cpus = "${params.medcpus}"
 
     input:
-    // path (final_unique_fasta)
-    // path (output_fasta)
     tuple val(sample), path (output_fasta), path (final_unique_fasta)
 
     output:
@@ -186,11 +162,10 @@ process search_exact {
 
 process make_count_table {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
-    // tag "generating abundance table"
     tag "${sample}"
-    debug true
-    cpus = 3
-    memory = 16.GB
+    // debug true
+    cpus = "${params.mincpus}"
+    memory = "${params.maxmems}"
 
     input:
     tuple val(sample), path (match_file)
@@ -203,7 +178,7 @@ process make_count_table {
     '''
     if [ -s !{match_file} ]; then
         make_count_table.py -o !{sample}.final.count_table -m !{match_file}
-        create_report.py -s !{sample} -c !{sample}.final.count_table -p !{params.oligo} -o !{sample}
+        create_report.py -s !{sample} -c !{sample}.final.count_table -p !{params.primer} -o !{sample}
     else
         echo "!{match_file} is empty !"
     fi

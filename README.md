@@ -47,30 +47,36 @@ This pipeline has been designed and tested under Linux CentOS and Ubuntu platfor
 
 
 1. Copy the Github repository to a folder  
-`git clone https://github.com/ncezid-biome/HMAS-QC-Pipeline2.git` 
+`git clone https://github.com/ncezid-biome/HMAS-QC-Pipeline2.git`   
+
+2.  If you haven't installed those required packages and if you have access to CDC/Scicomp, you can module load all of them. Otherwise, you can create a conda env with our provided yaml file. For that, you will run the following:   
+    1. `conda env create -n hmas -f bin/hmas.yaml` (if you have mamba installed, use `mamba env create` instead for speed)   
+    2.  `conda activate hmas`  
+>**Note**: We didn't use singularity container at this time because:  
+> 1. I can't find some docker images (i.e. PEAR)
+> 2. nextflow only allows 1 container image per process (and we need more than 1 for some processes)  
 
 
 
 
 ## USAGE
 
-1. make sure your paired demultiplexed fastq files (for each sample) are under the **/HMAS-QC-Pipeline2/data** folder. And they have a `*_R{1,2}*.fastq.gz` pattern
+1. Make sure to provide path for the 3 required parameters in **nextflow.config** file.    
 
+    1.  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
+    2.  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample). And each subfolder holds the _final.unique.fasta_, _final.count_table_, _samplename.csv_ and a few other intermediary files  
+    3.  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`
 
-2. create a  **output** folder under **/HMAS-QC-Pipeline2**   
-_note_: the output folder contains all the subfolders (one for each sample). And each subfolder holds the _final.unique.fasta_, _final.count_table_, _samplename.csv_ and a few other intermediary files
-
-
-3. If you haven't installed those required packages and if have access to Scicomp, you can module load all of them. Otherwise, you can create a conda env with our provided yaml file. For that, you will run the following:   
-    1. `conda env create -n hmas -f bin/hmas.yaml` (if you have mamba installed, use `mamba env create` instead for speed)   
-    2.  `conda activate hmas`  
->**Note**: We didn't use singularity container at this time because:  
-> 1. I can't find some docker images (i.e. PEAR)
-> 2. nextflow only allows 1 container image per process (and we need more than 1 for some processes)   
-4. Run the following:  
+  
+2. Run the following:  
 `nextflow run hmas2.nf`    
-**note:** if you have your input reads and/or your output folder in other than your current working directory, you can override those set in the nextflow script and provide them at the command line, for example:  
- `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT`
+**note:** if you're too lazy to provide those 3 required parameters in the **nextflow.config** file, you can still provide them at the command line, for example:  
+ `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
+
+ 3. **Test with the default test_data**:  
+ Run the following: `nextflow run hmas2.nf -profile test`  
+ Depends on your hardware, the test run should be completed in a few minutes. And the output will be in the `test_output` folder  
+
 
    
 
