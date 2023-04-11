@@ -5,7 +5,9 @@ channels:
   - defaults
 dependencies:
   - python=3.9
-  - pandas
+  - pandas=1.5.3
   - cutadapt=3.5
   - pear
-  - vsearch
+  - vsearch=2.22.1
+  - nextflow=22.10.6
+
