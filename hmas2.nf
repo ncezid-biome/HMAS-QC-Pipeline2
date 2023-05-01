@@ -61,14 +61,18 @@ process pair_merging {
     tuple val(sample), path(reads1), path(reads2)
 
     output:
-    tuple val(sample), path ("${sample}.fastq")
+    tuple val(sample), path ("${sample}.fastq"), optional:true
 
     shell:
     '''
-    pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
+    if [ -s !{reads1} ] && [ -s !{reads2} ]; then
+        pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
                                                 -m !{params.merging_maxlength} \
                                                 -v !{params.merging_minoverlap} -j !{{params.medcpus}}
-    mv !{sample}.assembled.fastq !{sample}.fastq
+        mv !{sample}.assembled.fastq !{sample}.fastq
+    else
+        echo "either !{reads1} or !{reads2} is empty !"
+    fi
 
     #using alternative fastq_mergepairs for merging
     #vsearch -fastq_mergepairs !{reads1} -reverse !{reads2} -fastqout !{sample}.fastq \
