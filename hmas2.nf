@@ -89,7 +89,7 @@ process quality_filtering {
     tuple val(sample), path (fastq)
 
     output:
-    tuple val(sample), path ("${sample}.fasta")
+    tuple val(sample), path ("${sample}.fasta"), optional:true
 
     shell:
     '''
@@ -130,7 +130,7 @@ process denoising {
     tuple val(sample), path (fasta)
 
     output:
-    tuple val(sample), path ("${sample}.final.unique.fasta")
+    tuple val(sample), path ("${sample}.final.unique.fasta"), optional:true
 
     shell:
     '''
