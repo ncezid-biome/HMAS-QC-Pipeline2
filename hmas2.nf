@@ -15,6 +15,8 @@ process cutadapt {
     errorStrategy 'retry'
     maxRetries 3
 
+    maxForks = "${params.maxcutadapts}"
+
     input:
     tuple val(sample), path(reads)
     
@@ -209,6 +211,10 @@ process combine_reports {
 }
 
 workflow {
+    // Filter out file pairs containing "Undetermined"
+    paired_reads = paired_reads.filter { pair -> 
+    !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
+
     removed_primer_reads_ch = cutadapt(paired_reads)
     clean_reads_ch = concat_reads(removed_primer_reads_ch)
     merged_reads_ch = pair_merging(clean_reads_ch)
