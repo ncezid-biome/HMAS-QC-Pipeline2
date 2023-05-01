@@ -69,16 +69,15 @@ This pipeline has been designed and tested under Linux CentOS and Ubuntu platfor
 
     1.  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
     2.  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample). And each subfolder holds the _final.unique.fasta_, _final.count_table_, _samplename.csv_ and a few other intermediary files  
-    3.  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`
+    3.  **params.primer**: this is the path (***absolute path recommended***) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`   
 
-  
-3. Run the following:  
+   >  Run the following:  
 `nextflow run hmas2.nf`    
 **note:** if you're too lazy to provide those 3 required parameters in the **nextflow.config** file, you can still provide them at the command line, for example:  
  `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
 
-
-
+3. **nextflow.config file**:  
+Feel free to update the file as necessary. But it is recommended to fill in the `params.reads, params.outdir, params.primer`, update the `CPU, memory, params.maxcutadapts` parameters based on your available hardware, and leave other parameters intact unless you have strong evidence to update them otherwise.
 
    
 
