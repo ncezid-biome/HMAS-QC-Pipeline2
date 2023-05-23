@@ -8,12 +8,14 @@ Channel
   .set { paired_reads }
 
 process cutadapt {
+    // be careful uncommenting this line, cutadapt creats a fastq for each primer pair
     // publishDir "${params.outdir}", mode: 'copy'
     tag "${sample}"
     cpus = "${params.maxcpus}"
     memory = "${params.medmems}"
     errorStrategy 'retry'
     maxRetries 3
+    debug true
 
     maxForks = "${params.maxcutadapts}"
 
@@ -27,13 +29,17 @@ process cutadapt {
     '''
     mkdir -p cutadapt
     run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
-                                     -o cutadapt -s !{sample} -p !{params.primer}
+                    -o cutadapt -s !{sample} -p !{params.primer} \
+                    -e !{params.cutadapt_maxerror} -l !{params.cutadapt_minlength} \
+                    -t !{params.cutadapt_thread} -c !{params.cutadapt_concurrent} \
+                    -b !{params.cutadapt_long}
+
     '''
 
 }
 
 process concat_reads {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     // debug true
 
@@ -53,7 +59,7 @@ process concat_reads {
 }
 
 process pair_merging {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 
@@ -74,15 +80,11 @@ process pair_merging {
         echo "either !{reads1} or !{reads2} is empty !"
     fi
 
-    #using alternative fastq_mergepairs for merging
-    #vsearch -fastq_mergepairs !{reads1} -reverse !{reads2} -fastqout !{sample}.fastq \
-    #                --fastq_maxns 0 --fastq_minovlen 20 --fastq_maxdiffs 20 --fastq_maxmergelen 325
-
     '''
 }
 
 process quality_filtering {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
 
     input:
@@ -103,7 +105,7 @@ process quality_filtering {
 }
 
 process dereplication {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
 
     input:
@@ -147,7 +149,7 @@ process denoising {
 
 
 process search_exact {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 
@@ -167,7 +169,8 @@ process search_exact {
 }
 
 process make_count_table {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", pattern: "*.count_table", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", pattern: "*.csv", mode: 'copy'
     tag "${sample}"
     // debug true
     cpus = "${params.mincpus}"
