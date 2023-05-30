@@ -9,7 +9,7 @@ Channel
 
 process cutadapt {
     // be careful uncommenting this line, cutadapt creats a fastq for each primer pair
-    // publishDir "${params.outdir}", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.maxcpus}"
     memory = "${params.medmems}"
@@ -39,7 +39,7 @@ process cutadapt {
 }
 
 process concat_reads {
-    // publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     // debug true
 
@@ -59,7 +59,7 @@ process concat_reads {
 }
 
 process pair_merging {
-    // publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 
@@ -84,7 +84,7 @@ process pair_merging {
 }
 
 process quality_filtering {
-    // publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
 
     input:
@@ -105,7 +105,7 @@ process quality_filtering {
 }
 
 process dereplication {
-    // publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
 
     input:
@@ -149,7 +149,7 @@ process denoising {
 
 
 process search_exact {
-    // publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 
@@ -169,7 +169,7 @@ process search_exact {
 }
 
 process make_count_table {
-    // publishDir "${params.outdir}/${sample}", pattern: "*.count_table", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", pattern: "*.count_table", mode: 'copy'
     publishDir "${params.outdir}/${sample}", pattern: "*.csv", mode: 'copy'
     tag "${sample}"
     // debug true
