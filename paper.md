@@ -53,7 +53,7 @@ Figure 1 depicts the workflow:
 8. Output.  An output folder is generated for each sample, containing 2 files and 1 subfolder: a high quality unique representative sequence file (fasta format), a plain text file report, and one subfolder for storing intermediary files. Optionally, there are also a sequence abundance information file (mothur full format count file). Additionally, there is the combined report summarizing the data from all samples.    
 
   
-![Figure 1](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/blob/joss_paper/HMAS2_pipeline_JOSS_resize.jpg) 
+![Figure 1](HMAS2_pipeline_JOSS_resize.jpg)  
 *overview of Step-mothur pipeline workflow.*
 
 
