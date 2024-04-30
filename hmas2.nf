@@ -16,6 +16,9 @@ process cutadapt {
     memory = "${params.medmems}"
     errorStrategy 'retry'
     maxRetries 3
+    debug true
+
+    maxForks = "${params.maxcutadapts}"
 
     input:
     tuple val(sample), path(reads)
@@ -28,13 +31,17 @@ process cutadapt {
     '''
     mkdir -p cutadapt
     run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
-                                     -o cutadapt -s !{sample} -p !{params.primer}
+                    -o cutadapt -s !{sample} -p !{params.primer} \
+                    -e !{params.cutadapt_maxerror} -l !{params.cutadapt_minlength} \
+                    -t !{params.cutadapt_thread} -c !{params.cutadapt_concurrent} \
+                    -b !{params.cutadapt_long}
+
     '''
 
 }
 
 process concat_reads {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     // debug true
 
@@ -54,7 +61,7 @@ process concat_reads {
 }
 
 process pair_merging {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
     errorStrategy 'ignore'
@@ -67,27 +74,27 @@ process pair_merging {
 
     shell:
     '''
-    pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
+    if [ -s !{reads1} ] && [ -s !{reads2} ]; then
+        pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
                                                 -m !{params.merging_maxlength} \
                                                 -v !{params.merging_minoverlap} -j !{{params.medcpus}}
-    mv !{sample}.assembled.fastq !{sample}.fastq
-
-    #using alternative fastq_mergepairs for merging
-    #vsearch -fastq_mergepairs !{reads1} -reverse !{reads2} -fastqout !{sample}.fastq \
-    #                --fastq_maxns 0 --fastq_minovlen 20 --fastq_maxdiffs 20 --fastq_maxmergelen 325
+        mv !{sample}.assembled.fastq !{sample}.fastq
+    else
+        echo "either !{reads1} or !{reads2} is empty !"
+    fi
 
     '''
 }
 
 process quality_filtering {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
 
     input:
     tuple val(sample), path (fastq)
 
     output:
-    tuple val(sample), path ("${sample}.fasta")
+    tuple val(sample), path ("${sample}.fasta"), optional:true
 
     shell:
     '''
@@ -101,7 +108,7 @@ process quality_filtering {
 }
 
 process dereplication {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
 
     input:
@@ -128,7 +135,7 @@ process denoising {
     tuple val(sample), path (fasta)
 
     output:
-    tuple val(sample), path ("${sample}.final.unique.fasta")
+    tuple val(sample), path ("${sample}.final.unique.fasta"), optional:true
 
     shell:
     '''
@@ -145,7 +152,7 @@ process denoising {
 
 
 process search_exact {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 
@@ -165,7 +172,8 @@ process search_exact {
 }
 
 process make_count_table {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}/temp", pattern: "*.count_table", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", pattern: "*.csv", mode: 'copy'
     tag "${sample}"
     // debug true
     cpus = "${params.mincpus}"
@@ -214,6 +222,10 @@ process combine_reports {
 }
 
 workflow {
+    // Filter out file pairs containing "Undetermined"
+    paired_reads = paired_reads.filter { pair -> 
+    !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
+
     removed_primer_reads_ch = cutadapt(paired_reads)
     // clean_reads_ch = concat_reads(removed_primer_reads_ch)
     // merged_reads_ch = pair_merging(clean_reads_ch)

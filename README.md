@@ -1,63 +1,30 @@
-# HMAS-QC-Pipeline2 (sample based)
+# Step-mothur
+## Introduction
+**Step-mothur** is a bioinformatics analysis pipeline used for initial quality control, denoising of highly-multiplexed amplicon sequencing (HMAS) data. Currently, only the pair-end Illumina data is supported.  
+The pipeline is built using [nextflow](https://www.nextflow.io/), a workflow tool to help with processing multiple samples in parallel and allowing for highly modular, customizable, and scalable analysis of HMAS data.  
+ 
 
-An alternative pipeline for doing initial quality control of highly-multiplexed amplicon sequencing data. **This sample based approach takes demultiplexed raw reads for each sample, and generates output file in a separate folder for each sample**
+## Pipeline summary  
+By default, the pipeline runs the following [workflow](#workflow):  
 
- [the HMAS2 QC Pipeline](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main)
+- Input: Illumina Miseq pair-end raw reads (fastq.gz format) for each sample, all in a single folder, and a plain file (4 columns, tab delimited) of primer information.  
+- Primer removal ([cutadapt](https://cutadapt.readthedocs.io/en/stable/installation.html))  
+- Pair merging ([pear](https://www.h-its.org/downloads/pear-academic/))  
+- Quality filtering ([vsearch](https://github.com/torognes/vsearch))  
+- Dereplication (vsearch)  
+- Denoising (vsearch)  
+- Reporting (custom scripts)
+- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is the combined report summarizing the data from all samples.    
 
-## TOC
-* [Description](#description)
-* [Requirements](#requirements)
-* [INSTALL](#install)
-* [USAGE](#usage)
-* [Workflow](#workflow)  
-* [miscellaneous](#miscellaneous)  
-
-## Description
-
-This is a pipeline that performs quality control analysis on highly-multiplexed amplicon sequencing (HMAS) data.
-The pipeline is implemented in nextflow with some python and shell scripts. The input of the pipeline is demultiplexed fastq files (gzipped or not) for each sample. If you have multiplexed fastq files, you can run bcl2fastq for demultiplexing. 
-It provides 3 main outputs of interest (**for each sample**): 
-
-1. A **fasta** file containing the high-quality representative unique sequences after cleaning
-2. A **count_table** file containing the abundance information of the above fasta file   
-~~**note:** _this count_table file is converted to a python pickle file (.pkl) for fast loading_~~  
-**note:** _this count_table is becoming obsolete because we now embedded abundance information  in the seq_ID in the above fasta file. For example (size=551 is the abundance value for this particular sequence):_    
-`>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`  
-3. A csv report file containing the statistics (mean read depth, successful primer counts, etc.) of the reads for this sample
-
-For more information and to see visualizations describing the workflow, see [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/main/documents).
-
-This pipeline has been designed and tested under Linux CentOS and Ubuntu platforms.  It has not been tested under Windows.
-
-## Requirements
-
-1. Python 3 or higher. Download python [here](https://www.python.org/downloads/). 
-
-
-2. PEAR installed and/or on your path. Download PEAR [here](https://www.h-its.org/downloads/pear-academic/).
-
-
-3. Cutadapt installed and/or on your path. Find cutadapt installation guide [here](https://cutadapt.readthedocs.io/en/stable/installation.html).
-
-4. VSEARCH installed and/or on your path. Find more vsearch installtion guide [here](https://github.com/torognes/vsearch).
-
-5. nextflow (version 22.04.3  or newer) installed and/or on your path. Find more nextflow installation guide [here](https://www.nextflow.io/docs/latest/getstarted.html).
-
-## INSTALL
+## Installation  
 
 
 1. Copy the Github repository to a folder  
 `git clone https://github.com/ncezid-biome/HMAS-QC-Pipeline2.git`   
 
-2.  If you haven't installed those required packages, you can create a conda env with our provided yaml file. For that, you will run the following:   
-    1. `conda env create -n hmas -f bin/hmas.yaml` (or `mamba env create -n hmas -f bin/hmas.yaml` instead for speed; CDC users have mamba available once they module load conda)   
-    2.  `conda activate hmas`  
->**Note**: We didn't use singularity container at this time because:  
-> 1. I can't find some docker images (i.e. PEAR)
-> 2. nextflow only allows 1 container image per process (and we need more than 1 for some processes)  
-
-
-
+2.  We recommend using conda for all required dependencies. You can create a conda env with our provided yaml file. For that, you will run the following:   
+    -  `conda env create -n hmas -f bin/hmas.yaml` (or `mamba env create -n hmas -f bin/hmas.yaml` for speed)   
+    -   `conda activate hmas`  
 
 ## USAGE
 
@@ -67,88 +34,60 @@ This pipeline has been designed and tested under Linux CentOS and Ubuntu platfor
 
 2. **Test with your own data** - Make sure to provide path for the 3 required parameters in **nextflow.config** file.    
 
-    1.  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
-    2.  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample). And each subfolder holds the _final.unique.fasta_, _final.count_table_, _samplename.csv_ and a few other intermediary files  
-    3.  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`
+    -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
+    -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
+    -  **params.primer**: this is the path (***absolute path recommended***) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
-  
-3. Run the following:  
-`nextflow run hmas2.nf`    
-**note:** if you're too lazy to provide those 3 required parameters in the **nextflow.config** file, you can still provide them at the command line, for example:  
+    **Run the following**:  
+    `nextflow run hmas2.nf`    
+
+    **note:** the alternative is to provide those 3 parameters at the command line, for example:  
  `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
 
-
-
+3. **nextflow.config file**:  
+Feel free to update the file as necessary. But it is recommended to fill in the `params.reads, params.outdir, params.primer`, update the `CPU, memory, params.maxcutadapts` parameters based on your available hardware, and leave other parameters intact unless you have strong evidence to update them otherwise.
 
    
 
 ## Workflow 
+<p align="center"><img src="HMAS2_pipeline_JOSS.svg" alt="Ellipsis" width="600"></p>  
 
-```mermaid
-graph TD
-    p0(Channel.fromFilePairs)
-    p10[cutadapt]
-    p11[concat_reads]
-    p12[pair_merging]
-    p13[quality_filtering]
-    p14[dereplication]
-    p15[denoising]
-    p16([join])
-    p17[search_exact]
-    p18[make_count_table]
-    p19((final count_table))
-    p20((final unique.fasta))
-    p21(combined_report)
-    p22([collect])
-    p23((combined_report.csv))
+**note:** 
+1. the optional count table contains abundance information for the corresponding high quality unique sequences (fasta file). It is only optional because the abundance information is also embedded in the seq_ID in the fasta file. For example, size=551 is the abundance value for this particular sequence.    `>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`
 
-    p0 -->|paired_reads| p10
-    p10 --> |sample.*.1.fastq, sample.*.2.fastq| p11
-    p11 --> |sample.1.fastq, sample.2.fastq| p12
-    p12 --> |sample.fastq| p13
-    p13 --> |sample.fasta| p14
-    p14 --> |unique.fasta| p15
-    p15 --> |final.unique.fasta| p16
-    p16 --> p17
-    p17 --> |output.match.txt| p18
-    p18 --> |final_count_table| p19
-    p18 --> |report.csv| p22 --> p21 --> p23
-    p15 --> p20
+## Notices
 
-    %% Change the positioning
-    %% Group the final output nodes
-    subgraph Final Output 
-        p19
-        p20
-        p23
-    end
-    %% Group the preprocessing nodes
-    subgraph    preprocessing
-        p0
-        p10
-        p11
-        p12
-    end
-    %% Group the processing nodes
-    subgraph          
-        p13
-        p14
-        p15
-        p16
-        p17
-        p18
-        p21
-        p22
-    end
+### Public Domain Notice
+This repository constitutes a work of the United States Government and is not
+subject to domestic copyright protection under 17 USC § 105. This repository is in
+the public domain within the United States, and copyright and related rights in
+the work worldwide are waived through the [CC0 1.0 Universal public domain dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+All contributions to this repository will be released under the CC0 dedication. By
+submitting a pull request you are agreeing to comply with this waiver of
+copyright interest. 
 
-```  
-**note:** the final.count_table and final.unique.fasta files are per sample based, while combined_report.csv is for the combined report for all the samples in the study.  
+### License Standard Notice
 
-## Miscellaneous 
+### Privacy Notice
+This repository contains only non-sensitive, publicly available data and
+information. All material and community participation is covered by the
+[Disclaimer](https://github.com/CDCgov/template/blob/master/DISCLAIMER.md)
+and [Code of Conduct](https://github.com/CDCgov/template/blob/master/code-of-conduct.md).
+For more information about CDC's privacy policy, please visit [http://www.cdc.gov/other/privacy.html](https://www.cdc.gov/other/privacy.html).
 
-1.  **difference in sequence abundance distribution** (between previous mothur version and current hmas2 version)   
-    - with mothur version, there is a significant peak at the very low end of sequence abundance. Please check out the visualization [this folder containing visual documents](https://github.com/ncezid-biome/HMAS-QC-Pipeline2/tree/sample_base/documents).    
-    - And this difference comes from the additional **unoise_alpha** parameter in the denoising step of the hmas2 pipeline. 
-    - > **alpha**: determines the threshold level of dissimilarity between frequent and infrequent reads for exclusion of infrequent reads.  
-    (Denoising exploits the observation that a low-abundance sequence that is very similar to a 
-high-abundance sequence is likely to be an error.)
+### Contributing Notice
+Anyone is encouraged to contribute to the repository by [forking](https://help.github.com/articles/fork-a-repo)
+and submitting a pull request. (If you are new to GitHub, you might start with a
+[basic tutorial](https://help.github.com/articles/set-up-git).) By contributing
+to this project, you grant a world-wide, royalty-free, perpetual, irrevocable,
+non-exclusive, transferable license to all users under the terms of the
+[Apache Software License v2](http://www.apache.org/licenses/LICENSE-2.0.html) or
+later.
+
+All comments, messages, pull requests, and other submissions received through
+CDC including this GitHub page may be subject to applicable federal law, including but not limited to the Federal Records Act, and may be archived. Learn more at [http://www.cdc.gov/other/privacy.html](http://www.cdc.gov/other/privacy.html).
+
+### Records Management Notice
+This repository is not a source of government records, but is a copy to increase
+collaboration and collaborative potential. All government records will be
+published through the [CDC web site](http://www.cdc.gov). 
