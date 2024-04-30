@@ -86,38 +86,63 @@ def remove_primer(args):
 	flag = args.mode.lower() == 'true' #convert string to boolean
     
 	#1. prep for cutadapt commands
-	cutadapt_commands = []
+	# cutadapt_commands = []
 	primers = utilities.Primers(oligo_file)
 	cutadapt_cmd = cmd_exists('cutadapt')
+
+	cutadapt_commands = [cutadapt_cmd, #'-a', 
+		# f'{key}=^{fprimer}...{rc_rprimer}', '-A', 
+		# f'{key}=^{rprimer}...{rc_fprimer}', '-o', 
+		# f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
+		# f'{out_dir}/{sample}.{key}.2.fastq', 
+		'-o',
+		f'{out_dir}/{sample}.1.fastq', '-p', 
+		f'{out_dir}/{sample}.2.fastq',
+		# f'{sample}.{key}.1.fastq', '-p', 
+		# f'{sample}.{key}.2.fastq',
+		R1_gz, R2_gz,
+		# f"--rename='{{id}}  adapter={{adapter_name}} {{comment}}'",
+		f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
+		'--quiet', '--discard-untrimmed', '-e', '0', '-m', '1', '-j', '4']
+
 	for key in primers.pseqs:
 		fprimer = primers.pseqs[key][0]
 		rc_fprimer = utilities.revcomp(fprimer)
 		rc_rprimer = primers.pseqs[key][1]
 		rprimer = utilities.revcomp(rc_rprimer)
+
+		# concatenate all the primer sequences here
+		cutadapt_commands.insert(1,f'{key}=^{rprimer}...{rc_fprimer}')
+		cutadapt_commands.insert(1,'-A')
+		cutadapt_commands.insert(1,f'{key}=^{fprimer}...{rc_rprimer}')
+		cutadapt_commands.insert(1,'-a')
+		
   
-		if flag: #reads are longer than amplicons
-			cutadapt_commands.append([cutadapt_cmd, '-a', 
-				f'{key}=^{fprimer}...{rc_rprimer}', '-A', 
-				f'{key}=^{rprimer}...{rc_fprimer}', '-o', 
-				f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
-				f'{out_dir}/{sample}.{key}.2.fastq',
-				R1_gz, R2_gz,
-				f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
-				'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}'])
-		else:
-			cutadapt_commands.append([cutadapt_cmd, '-g', 
-				f'{key}=^{fprimer}', '-G', 
-				f'{key}=^{rprimer}', '-o', 
-				f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
-				f'{out_dir}/{sample}.{key}.2.fastq',
-				R1_gz, R2_gz,
-				f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
-				'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}'])
+		# cutadapt_commands.append([cutadapt_cmd, '-a', 
+		# 	f'{key}=^{fprimer}...{rc_rprimer}', '-A', 
+       	# 	f'{key}=^{rprimer}...{rc_fprimer}', '-o', 
+		# 	f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
+   		# 	f'{out_dir}/{sample}.{key}.2.fastq',
+		# 	# f'{sample}.{key}.1.fastq', '-p', 
+   		# 	# f'{sample}.{key}.2.fastq',
+		# 	R1_gz, R2_gz,
+		# 	# f"--rename='{{id}}  adapter={{adapter_name}} {{comment}}'",
+		# 	f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
+       	# 	'--quiet', '--discard-untrimmed', '-e', '0', '-m', '1', '-j', '1'])
     
 
+
 	#2. run cutadapt 
-	with concurrent.futures.ProcessPoolExecutor(max_workers=num_process) as executor:
-		executor.map(run_cutadapt, cutadapt_commands)
+	# with concurrent.futures.ProcessPoolExecutor(max_workers=num_process) as executor:
+	# 	executor.map(run_cutadapt, cutadapt_commands)
+  	
+	# print(datetime.now())
+	# print(f"done with {sample} cutadapt")
+	
+	# print (f'{sample} cutadapt_commands length is: {len(cutadapt_commands)}')
+
+	run_cutadapt(cutadapt_commands)
+
 
             
 if __name__ == "__main__":
