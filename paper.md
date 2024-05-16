@@ -32,7 +32,7 @@ bibliography: paper.bib
 
 # Summary
 
-Highly multiplexed amplicon sequencing (HMAS) is a potentially cost-effective and scalable method to detect genetic clusters and potential outbreaks of enteric pathogens directly from stool, without isolating a bacterial culture. We developed an automated HMAS data quality control pipeline by combining multiple off-the-shelf bioinformatic tools - including cutadapt, PEAR, vsearch and customized Python and shell scripts - through Nextflow [@DiTommaso:2017]. Software dependencies are distributed through a Conda environment. Notably, our pipeline, Step-mothur, is specifically designed to handle a large number of amplicons by leveraging the innate parallel processing capabilities offered by Nextflow.  
+Highly multiplexed amplicon sequencing (HMAS) is a potentially cost-effective and scalable method to detect genetic clusters and potential outbreaks of enteric pathogens directly from stool, without isolating a bacterial culture. We developed an automated HMAS data quality control pipeline by combining multiple off-the-shelf bioinformatic tools - including cutadapt, PEAR, vsearch and customized Python and shell scripts - through Nextflow. Software dependencies are distributed through a Conda environment. Notably, our pipeline, Step-mothur, is specifically designed to handle numerous amplicons by leveraging the innate parallel processing capabilities offered by Nextflow.  
 
 # Statement of need
 
@@ -43,7 +43,7 @@ Targeted next-generation sequencing (NGS) methods, like 16S amplicon sequencing,
 Figure 1 depicts the workflow:  
 1. Input.  Required files include Illumina Miseq pair-end raw reads (fastq.gz format) for each sample, all in a single folder, and a plain text file of primer information. To generate the example input data, the Juno microfluidic thermocycler from Standard BioTools was used to amplify 2461 Salmonella cgMLST primer pairs into amplicon libraries. These libraries were subsequently sequenced on an Illumina MiSeq platform (2x250 reads, v2 chemistry).    
 2. Primer removal.  Remove primer sequences with cutadapt [@Martin:2011]. Users can adjust error tolerance, as well as other settings depending on amplicon design (e.g., if reads can be longer than amplicons).      
-3. Pair merging.  The pipeline uses pear [@Zhang:2014] to merge reads. Users can set different threshold value in the configuration file.   
+3. Pair merging.  The pipeline uses PEAR [@Zhang:2014] to merge reads. Users can set different threshold value in the configuration file.   
 4. Quality filtering.  The pipeline uses vsearch [@Rognes:2016] to remove sequences that contain sequencing errors, based on the quality scores in the original fastq file. After this step, fastq files are converted to fasta files.   
 5. Dereplication.  The pipeline uses vsearch [@Rognes:2016] to extract all the unique sequences that are represented in the reads.   
 6. Denoising.   The denoising algorithms in the pipeline leverage read frequency and sequence composition to identify probable sequencing errors. Specifically, the UNOISE3 algorithm [@Edgar:2016] implemented in vsearch [@Rognes:2016] is utilized for denoising purposes.   
@@ -51,7 +51,7 @@ Figure 1 depicts the workflow:
 8. Output.  An output folder is generated for each sample, containing 2 files and 1 subfolder: a high quality unique representative sequence file (fasta format), a plain text file report, and one subfolder for storing intermediary files. Optionally, there are also a sequence abundance information file (mothur full format count file). Additionally, there is the combined report summarizing the data from all samples.    
 
   
-![Figure 1](HMAS2_pipeline_JOSS_resize.jpg)  
+![Figure 1](HMAS2_paper.svg)  
 *overview of Step-mothur pipeline workflow.*
 
 
