@@ -3,13 +3,13 @@ nextflow.enable.dsl=2
 
 
 Channel
-  .fromFilePairs("${params.reads}/*_R{1,2}*.fastq.gz",size: 2)
+    // search for pair-end raw reads files in the given folder or any subfolders
+   .fromFilePairs(["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"], size: 2)
  .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
   .set { paired_reads }
 
 process cutadapt {
-    // be careful uncommenting this line, cutadapt creats a fastq for each primer pair
-    // publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
+    // publishDir "${params.outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     cpus = "${params.maxcpus}"
     memory = "${params.medmems}"
@@ -23,7 +23,7 @@ process cutadapt {
     tuple val(sample), path(reads)
     
     output:
-    tuple val(sample), path ("cutadapt/${sample}*.1.fastq"), path ("cutadapt/${sample}*.2.fastq")
+    tuple val(sample), path ("cutadapt/${sample}.1.fastq"), path ("cutadapt/${sample}.2.fastq")
 
     shell:
     '''
@@ -31,28 +31,7 @@ process cutadapt {
     run_cutadapt.py -f !{reads[0]} -r !{reads[1]} \
                     -o cutadapt -s !{sample} -p !{params.primer} \
                     -e !{params.cutadapt_maxerror} -l !{params.cutadapt_minlength} \
-                    -t !{params.cutadapt_thread} -c !{params.cutadapt_concurrent} \
-                    -b !{params.cutadapt_long}
-
-    '''
-
-}
-
-process concat_reads {
-    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
-    tag "${sample}"
-    // debug true
-
-    input:
-    tuple val(sample), path (reads1), path (reads2)
-
-    output:
-    tuple val(sample), path ("${sample}.1.fastq"), path ("${sample}.2.fastq")
-
-    shell:
-    '''
-    cat !{reads1} >> !{sample}.1.fastq
-    cat !{reads2} >> !{sample}.2.fastq
+                    -t !{params.cutadapt_thread} -b !{params.cutadapt_long}
 
     '''
 
@@ -62,6 +41,7 @@ process pair_merging {
     publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
+    errorStrategy 'ignore'
 
     input:
     tuple val(sample), path(reads1), path(reads2)
@@ -211,7 +191,8 @@ process combine_reports {
     #!{reports_file} is passed in as a string (sapce delimited) concatenation of all sample.csv file
     # Ex.  sample1.csv sample2.csv sample3.csv 
     # which will then be split by the script to read each csv file
-    combine_reports.py -o report.csv -p "!{reports_file}"
+    #combine_reports.py -o report.csv -p "!{reports_file}"
+    combine_reports.py -o report.csv -p "!{reports_file}" -i "!{params.reads}"
 
     '''
 
@@ -223,8 +204,7 @@ workflow {
     !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
 
     removed_primer_reads_ch = cutadapt(paired_reads)
-    clean_reads_ch = concat_reads(removed_primer_reads_ch)
-    merged_reads_ch = pair_merging(clean_reads_ch)
+    merged_reads_ch = pair_merging(removed_primer_reads_ch)
     filered_reads_ch = quality_filtering(merged_reads_ch)
     unique_reads_ch = dereplication(filered_reads_ch)
     denoisded_reads_ch = denoising(unique_reads_ch)
@@ -235,4 +215,3 @@ workflow {
     reports_file_ch = make_count_table(match_file_ch).report.collect()
     combine_reports(reports_file_ch)
 }
-

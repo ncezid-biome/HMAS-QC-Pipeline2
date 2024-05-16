@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys, os, shutil, subprocess, argparse
-from datetime import datetime
 import concurrent.futures
 import utilities
 import pandas as pd
@@ -48,7 +47,7 @@ def parse_argument():
     # note
     # oligo_file contains the primer information (4 columns tab delimited), Ex:
     # primer	TTATCGGGATGCCAGATCTGC	GRCGGGGACATTCTCCTCCAG	OG0003222primerGroup
-    # primer / forward_seq / reverse_seq / primer_name
+    # primer / forward_seq / rc_reverse_seq / primer_name
     parser = argparse.ArgumentParser(prog = 'run_cutadapt.py')
     parser.add_argument('-f', '--read1', metavar = '', required = True, help = 'Specify R1 read')
     parser.add_argument('-r', '--read2', metavar = '', required = True, help = 'Specify R2 read')
@@ -58,7 +57,6 @@ def parse_argument():
     parser.add_argument('-e', '--max_error', metavar = '', required = True, help = 'max error')
     parser.add_argument('-l', '--min_length', metavar = '', required = True, help = 'min length')
     parser.add_argument('-t', '--thread', metavar = '', required = True, help = 'thread')
-    parser.add_argument('-c', '--concurrent', metavar = '', required = True, help = 'concurrent')
     parser.add_argument('-b', '--mode', metavar = '', required = True, help = 'boolean value if reads are shorter than amplicons')
     
     
@@ -78,7 +76,6 @@ def remove_primer(args):
 	R1_gz = args.read1
 	R2_gz = args.read2
 	out_dir = args.out_dir
-	num_process = int(args.concurrent)
 	oligo_file = args.oligo_file
 	max_error = args.max_error
 	min_length = args.min_length
@@ -86,38 +83,38 @@ def remove_primer(args):
 	flag = args.mode.lower() == 'true' #convert string to boolean
     
 	#1. prep for cutadapt commands
-	cutadapt_commands = []
+	# cutadapt_commands = []
 	primers = utilities.Primers(oligo_file)
 	cutadapt_cmd = cmd_exists('cutadapt')
+
+	cutadapt_commands = [cutadapt_cmd, '-o',
+		f'{out_dir}/{sample}.1.fastq', '-p', 
+		f'{out_dir}/{sample}.2.fastq',
+		R1_gz, R2_gz,
+		f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
+		'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}']
+
+	# go through all our primer pairs and concatenate all the primer sequences in a single cutadapt command
 	for key in primers.pseqs:
 		fprimer = primers.pseqs[key][0]
 		rc_fprimer = utilities.revcomp(fprimer)
-		rc_rprimer = primers.pseqs[key][1]
+		rc_rprimer = primers.pseqs[key][1] # by default we use reverse complement of reverse_primer in primer file
 		rprimer = utilities.revcomp(rc_rprimer)
-  
-		if flag: #reads are longer than amplicons
-			cutadapt_commands.append([cutadapt_cmd, '-a', 
-				f'{key}=^{fprimer}...{rc_rprimer}', '-A', 
-				f'{key}=^{rprimer}...{rc_fprimer}', '-o', 
-				f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
-				f'{out_dir}/{sample}.{key}.2.fastq',
-				R1_gz, R2_gz,
-				f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
-				'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}'])
-		else:
-			cutadapt_commands.append([cutadapt_cmd, '-g', 
-				f'{key}=^{fprimer}', '-G', 
-				f'{key}=^{rprimer}', '-o', 
-				f'{out_dir}/{sample}.{key}.1.fastq', '-p', 
-				f'{out_dir}/{sample}.{key}.2.fastq',
-				R1_gz, R2_gz,
-				f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
-				'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}'])
-    
 
-	#2. run cutadapt 
-	with concurrent.futures.ProcessPoolExecutor(max_workers=num_process) as executor:
-		executor.map(run_cutadapt, cutadapt_commands)
+		if flag: # reads longer than amplicons (use a linked adapter)
+			cutadapt_commands.insert(1,f'{key}=^{rprimer}...{rc_fprimer}')
+			cutadapt_commands.insert(1,'-A')
+			cutadapt_commands.insert(1,f'{key}=^{fprimer}...{rc_rprimer}')
+			cutadapt_commands.insert(1,'-a')
+		else: # reads shorter than amplicons
+			cutadapt_commands.insert(1,f'{key}=^{rprimer}')
+			cutadapt_commands.insert(1,'-G')
+			cutadapt_commands.insert(1,f'{key}=^{fprimer}')
+			cutadapt_commands.insert(1,'-g')
+		
+
+	run_cutadapt(cutadapt_commands)
+
 
             
 if __name__ == "__main__":
