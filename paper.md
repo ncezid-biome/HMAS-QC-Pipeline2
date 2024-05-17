@@ -50,8 +50,8 @@ Figure 1 depicts the workflow:
 7. Reporting.  The pipeline executes a customized Python script to generate individual plain text file reports for each sample. These reports contain essential information such as the mean read depth and primer success rate, in addition to a combined report summarizing the data from all samples.     
 8. Output.  An output folder is generated for each sample, containing 2 files and 1 subfolder: a high quality unique representative sequence file (fasta format), a plain text file report, and one subfolder for storing intermediary files. Optionally, there are also a sequence abundance information file (mothur full format count file). Additionally, there is the combined report summarizing the data from all samples.    
 
-  
-<img src="HMAS2_FLOWCHART_PAPER.png"  width="600"/>  
+
+![overview of Step-mothur pipeline workflow.](HMAS2_FLOWCHART_PAPER.png)
 
 *overview of Step-mothur pipeline workflow.*
 
