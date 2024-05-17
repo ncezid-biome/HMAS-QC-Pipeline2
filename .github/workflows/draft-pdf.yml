@@ -1,4 +1,10 @@
-on: [push]
+on:
+  push:
+    paths:
+      - paper.md
+      - paper.bib
+      - HMAS2_FLOWCHART_PAPER.png
+      - .github/workflows/draft-pdf.yml
 
 jobs:
   paper:

@@ -36,7 +36,7 @@ By default, the pipeline runs the following [workflow](#workflow):
 
     -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
     -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
-    -  **params.primer**: this is the path (***absolute path recommended***) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse complement of reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
+    -  **params.primer**: this is the path (***absolute path recommended***) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
     **Run the following**:  
     `nextflow run hmas2.nf`    
@@ -50,7 +50,7 @@ Feel free to update the file as necessary. But it is recommended to fill in the 
    
 
 ## Workflow 
-<p align="center"><img src="HMAS2_pipeline_JOSS.svg" alt="Ellipsis" width="600"></p>  
+<p align="center"><img src="HMAS2.svg" alt="Ellipsis" width="600"></p>  
 
 **note:** 
 1. the optional count table contains abundance information for the corresponding high quality unique sequences (fasta file). It is only optional because the abundance information is also embedded in the seq_ID in the fasta file. For example, size=551 is the abundance value for this particular sequence.    `>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`
@@ -90,4 +90,4 @@ CDC including this GitHub page may be subject to applicable federal law, includi
 ### Records Management Notice
 This repository is not a source of government records, but is a copy to increase
 collaboration and collaborative potential. All government records will be
-published through the [CDC web site](http://www.cdc.gov).   
+published through the [CDC web site](http://www.cdc.gov). 
