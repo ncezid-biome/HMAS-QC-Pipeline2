@@ -53,7 +53,6 @@ Figure 1 depicts the workflow:
 
 ![overview of Step-mothur pipeline workflow.](HMAS2_FLOWCHART_PAPER.png)
 
-*overview of Step-mothur pipeline workflow.*
 
 
 ## Configuration file
