@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys, os, shutil, subprocess, argparse
-import concurrent.futures
 import utilities
 import pandas as pd
 from os.path import isfile
@@ -88,11 +87,12 @@ def remove_primer(args):
 	cutadapt_cmd = cmd_exists('cutadapt')
 
 	cutadapt_commands = [cutadapt_cmd, '-o',
-		f'{out_dir}/{sample}.1.fastq', '-p', 
-		f'{out_dir}/{sample}.2.fastq',
+		f'{out_dir}/{sample}.trimmed.1.fastq', '-p', 
+		f'{out_dir}/{sample}.trimmed.2.fastq',
 		R1_gz, R2_gz,
 		f"--rename={{id}}  adapter={{adapter_name}}={sample} {{comment}}",
-		'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}']
+		#'--quiet', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}']
+		f'--json={out_dir}/{sample}.cutadapt.json', '--discard-untrimmed', '-e', f'{max_error}', '-m', f'{min_length}', '-j', f'{thread}']
 
 	# go through all our primer pairs and concatenate all the primer sequences in a single cutadapt command
 	for key in primers.pseqs:
