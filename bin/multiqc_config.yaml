@@ -1,0 +1,47 @@
+report_header_info:
+  - Pipeline version: v1.2.0
+  - Contact E-mail: "qtl7@cdc.gov"
+  - Project Type: "HMAS Application"
+  - Sequencing Platform: "MiSeq High Output V3"
+  - Sequencing Setup: "2x250"
+  - Assay: ASY-SMNLA v1
+  - Lot ID: 20268_ORP_21.O#
+
+custom_logo: "step_mothur_logo.png"
+custom_logo_url: "https://github.com/ncezid-biome/HMAS-QC-Pipeline2"
+custom_logo_title: "Step-mothur"
+
+software_versions:
+  vsearch: "2.14.1"
+  pear: "0.9.6"
+
+section_comments:
+  pear: "a tool to merge pair-end reads "
+  qfilter: "a vsearch method (fastx_filter) to do quality filtering"
+  dereplication: "a vsearch method (derep_fulllength) to group together duplicate reads"
+  denoise: "a vsearch method (cluster_unoise) with UNOISE3 algorithm to perform denoising"
+
+remove_sections:
+  - fastqc_per_base_sequence_content
+  - fastqc_sequence_duplication_levels
+  - fastqc_status_checks
+  - fastqc_top_overrepresented_sequences
+  - fastqc_adapter_content
+  - fastqc_sequence_length_distribution
+
+module_order:
+  - fastqc
+  - cutadapt
+  - custom_content
+
+# red-highlight rows in 'hmas_run_report' table col1 and col2 (these are unique IDs for these 2 columns)
+# for any value less than 10 for col1 and 0.95 for col2 or it contains 'n/a'
+table_cond_formatting_rules:
+  col1:
+    fail:
+      - lt: 10
+      - s_contains: "n/a"
+  col2:
+    fail:
+      - lt: 0.9
+      - s_contains: "n/a"

@@ -1,5 +1,5 @@
 process cutadapt {
-    //publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/${sample}", mode: 'copy', pattern: "*.fastq"
     tag "${sample}"
     cpus = "${params.maxcpus}"
     memory = "${params.medmems}"

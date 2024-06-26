@@ -4,6 +4,7 @@ import pandas as pd
 import argparse
 import os
 import re
+import yaml
 
 '''
 This script reads all report.csv (for each sample) and concantenate them into one single report.csv. It will 
@@ -11,6 +12,49 @@ also add a 'Mean read depth across entire run' row at the end.
 
 This script requires all report.csv file names be passed in a concatenated string as a command line argument.
 '''
+
+def make_report_yaml(output_file, data_df):
+
+    # Create headers dictionary
+    headers = {
+        'col1': {
+            'title': 'Mean read depth',
+            'description': 'we include only reads with at least 2 sequence count',
+            'format': '{:,.1f}',
+        },
+        'col2': {
+            'title': '% of successful primer-pairs',
+            'description': 'primer pairs with at lease 2 amplicons in the sample',
+            'format': '{:,.3f}',
+            "scale": False
+        },
+        'col3': {
+            'title': '# of successful primer-pairs',
+            'description': 'primer pairs with at lease 2 amplicons in the sample',
+        },
+    }
+
+    # Convert the DataFrame to the required format
+    data_yaml = data_df.to_dict(orient='index')
+
+    # Create the full YAML dictionary
+    yaml_dict = {
+        'id': 'hmas_run_report',
+        'section_name': 'HMAS run report',
+        'description': 'combined summary report for all samples in this run',
+        'plot_type': 'table',
+        'pconfig': {
+            'id': 'hmas_run_report',
+            'sort_rows': False
+        },
+        'headers': headers,
+        'data': data_yaml
+    }
+
+    # Write to a YAML file
+    with open(output_file, 'w') as file:
+        yaml.dump(yaml_dict, file, sort_keys=False)
+
 
 def list_files_in_folder(folder_path):
     """
@@ -46,6 +90,7 @@ def parse_argument():
 
     parser = argparse.ArgumentParser(prog = 'create_report.py')
     parser.add_argument('-o', '--output', metavar = '', required = True, help = 'Specify output file')
+    parser.add_argument('-y', '--yaml', metavar = '', required = True, help = 'Specify output mqc report file')
     #passed in as a string (space delimited) from command line
     parser.add_argument('-p', '--reports', metavar = '', required = True, help = 'Specify reports')
     parser.add_argument('-i', '--folder_path', metavar = '', required = True, help = 'Specify folder path for fasta.gz files')
@@ -70,3 +115,11 @@ if __name__ == "__main__":
         report_df.loc[f'{sample}'] = [None,None,None]
 
     report_df.to_csv(f"{args.output}")
+
+    # now generate report yaml file for MultiQC report
+    # change column name
+    report_df.columns = ['col1','col2','col3']
+    #update empty cell to n/a
+    report_df.fillna('n/a', inplace=True)
+    make_report_yaml(args.yaml, report_df)
+        

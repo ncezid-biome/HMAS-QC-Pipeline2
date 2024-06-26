@@ -4,6 +4,7 @@ process multiqc {
 
     input:
     path ('*')
+    path (config_yaml)
  
     output:
     path "multiqc_report.html", emit:multiqc_report, optional:true
@@ -11,6 +12,6 @@ process multiqc {
  
     script:
     """
-    multiqc .
+    multiqc -c $config_yaml .
     """
 }
