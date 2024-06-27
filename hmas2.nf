@@ -12,18 +12,18 @@ Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for
 Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
 
 
-include { FASTQC as FASTQC_RAW } from './modules/fastqc'
-include { cutadapt } from './modules/cutadapt'
-include { pair_merging } from './modules/pair_merging'
-include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch'
+include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf'
+include { cutadapt } from './modules/cutadapt/main.nf'
+include { pair_merging } from './modules/pair_merging/main.nf'
+include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch/main.nf'
 // include { hashing } from './modules/local/hash'
-include { combine_reports } from './modules/local/combine_reports'
-include { combine_logs as combine_logs_pear } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_derep } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs'
-include { make_count_table } from './modules/local/make_count_table'
-include { multiqc } from './modules/multiqc'
+include { combine_reports } from './modules/local/combine_reports.nf'
+include { combine_logs as combine_logs_pear } from './modules/local/combine_logs.nf'
+include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf'
+include { combine_logs as combine_logs_derep } from './modules/local/combine_logs.nf'
+include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs.nf'
+include { make_count_table } from './modules/local/make_count_table.nf'
+include { multiqc } from './modules/multiqc/main.nf'
 
 workflow {
     // Filter out file pairs containing "Undetermined"
