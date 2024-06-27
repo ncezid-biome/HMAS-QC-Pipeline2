@@ -8,13 +8,16 @@ The pipeline is built using [nextflow](https://www.nextflow.io/), a workflow too
 By default, the pipeline runs the following [workflow](#workflow):  
 
 - Input: Illumina Miseq pair-end raw reads (fastq.gz format) for each sample, all in a single folder, and a plain file (4 columns, tab delimited) of primer information.  
+- Raw reads quality control ([fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))   
 - Primer removal ([cutadapt](https://cutadapt.readthedocs.io/en/stable/installation.html))  
 - Pair merging ([pear](https://www.h-its.org/downloads/pear-academic/))  
 - Quality filtering ([vsearch](https://github.com/torognes/vsearch))  
 - Dereplication (vsearch)  
 - Denoising (vsearch)  
 - Reporting (custom scripts)
-- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is the combined report summarizing the data from all samples.    
+- Aggregate reports ([multqic](https://multiqc.info/))  
+- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules.   
+<p align="center"><img src="HMAS_MultiQC_REPORT.png" alt="HMAS-QC-Pipeline2" width="750"></p>
 
 ## Installation  
 
@@ -45,12 +48,15 @@ By default, the pipeline runs the following [workflow](#workflow):
  `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
 
 3. **nextflow.config file**:  
-Feel free to update the file as necessary. But it is recommended to fill in the `params.reads, params.outdir, params.primer`, update the `CPU, memory, params.maxcutadapts` parameters based on your available hardware, and leave other parameters intact unless you have strong evidence to update them otherwise.
+Feel free to update the file as necessary. But it is recommended to fill in the `params.reads, params.outdir, params.primer`, update the `CPU, memory, params.maxcutadapts` parameters based on your available hardware, and leave other parameters intact unless you have strong evidence to update them otherwise.  
+
+4.  **multiqc_config.yaml file in bin/ folder**:  
+Feel free to update the file as necessary. This file controls the display in the MultiQC htmal report.  
 
    
 
 ## Workflow 
-<p align="center"><img src="HMAS2.svg" alt="Ellipsis" width="600"></p>  
+<p align="center"><img src="HMAS2_1.svg" alt="HMAS-QC-Pipeline2" width="600"></p>  
 
 **note:** 
 1. the optional count table contains abundance information for the corresponding high quality unique sequences (fasta file). It is only optional because the abundance information is also embedded in the seq_ID in the fasta file. For example, size=551 is the abundance value for this particular sequence.    `>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`

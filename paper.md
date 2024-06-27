@@ -42,21 +42,23 @@ Targeted next-generation sequencing (NGS) methods, like 16S amplicon sequencing,
 ## Workflow
 Figure 1 depicts the workflow:  
 1. Input.  Required files include Illumina Miseq pair-end raw reads (fastq.gz format) for each sample, all in a single folder, and a plain text file of primer information. To generate the example input data, the Juno microfluidic thermocycler from Standard BioTools was used to amplify 2461 Salmonella cgMLST primer pairs into amplicon libraries. These libraries were subsequently sequenced on an Illumina MiSeq platform (2x250 reads, v2 chemistry).    
-2. Primer removal.  Remove primer sequences with cutadapt [@Martin:2011]. Users can adjust error tolerance, as well as other settings depending on amplicon design (e.g., if reads can be longer than amplicons).      
-3. Pair merging.  The pipeline uses PEAR [@Zhang:2014] to merge reads. Users can set different threshold value in the configuration file.   
-4. Quality filtering.  The pipeline uses vsearch [@Rognes:2016] to remove sequences that contain sequencing errors, based on the quality scores in the original fastq file. After this step, fastq files are converted to fasta files.   
-5. Dereplication.  The pipeline uses vsearch [@Rognes:2016] to extract all the unique sequences that are represented in the reads.   
-6. Denoising.   The denoising algorithms in the pipeline leverage read frequency and sequence composition to identify probable sequencing errors. Specifically, the UNOISE3 algorithm [@Edgar:2016] implemented in vsearch [@Rognes:2016] is utilized for denoising purposes.   
-7. Reporting.  The pipeline executes a customized Python script to generate individual plain text file reports for each sample. These reports contain essential information such as the mean read depth and primer success rate, in addition to a combined report summarizing the data from all samples.     
-8. Output.  An output folder is generated for each sample, containing 2 files and 1 subfolder: a high quality unique representative sequence file (fasta format), a plain text file report, and one subfolder for storing intermediary files. Optionally, there are also a sequence abundance information file (mothur full format count file). Additionally, there is the combined report summarizing the data from all samples.    
+2. Quality control. Evaluate the raw reads data quality with FASTQC [@Andrews:2010].
+3. Primer removal.  Remove primer sequences with cutadapt [@Martin:2011]. Users can adjust error tolerance, as well as other settings depending on amplicon design (e.g., if reads can be longer than amplicons).      
+4. Pair merging.  The pipeline uses PEAR [@Zhang:2014] to merge reads. Users can set different threshold value in the configuration file.   
+5. Quality filtering.  The pipeline uses vsearch [@Rognes:2016] to remove sequences that contain sequencing errors, based on the quality scores in the original fastq file. After this step, fastq files are converted to fasta files.   
+6. Dereplication.  The pipeline uses vsearch [@Rognes:2016] to extract all the unique sequences that are represented in the reads.   
+7. Denoising.   The denoising algorithms in the pipeline leverage read frequency and sequence composition to identify probable sequencing errors. Specifically, the UNOISE3 algorithm [@Edgar:2016] implemented in vsearch [@Rognes:2016] is utilized for denoising purposes.   
+8. Reporting.  The pipeline runs a custom Python script to generate individual plain text file reports for each sample. These reports include key details such as mean read depth and primer success rate. Additionally, the pipeline creates a combined CSV report summarizing data from all samples. To provide a comprehensive overview, a detailed MultiQC [@Ewels:2016] HTML report is also produced, which aggregates outputs from all intermediary steps, including the combined report.     
+9. Output.  An output folder is generated for each sample, containing 2 files and 1 subfolder: a high quality unique representative sequence file (fasta format), a plain text file report, and one subfolder for storing intermediary files. Optionally, there is also a sequence abundance information file (mothur full format count file). Additionally, there are a combined report summarizing the data from all samples and an aggregated MultiQC [@Ewels:2016] html report. 
 
 
-![overview of Step-mothur pipeline workflow.](HMAS2_FLOWCHART_PAPER.png)
+![overview of Step-mothur pipeline workflow.](HMAS2_FLOWCHART_PAPER_1.png)
 
 
 
 ## Configuration file
-A single configuration file containing all the pipeline options and parameters is provided. Users have the flexibility to adjust threshold values within each process, fine-tuning the pipeline's behavior to meet their requirements. Additionally, the configuration file allows customization of pipeline parameters based on the available hardware resources, enabling efficient utilization of computing capabilities.   
+1. nextflow.config: containins all the pipeline options and parameters is provided. Users have the flexibility to adjust threshold values within each process, fine-tuning the pipeline's behavior to meet their requirements. Additionally, the configuration file allows customization of pipeline parameters based on the available hardware resources, enabling efficient utilization of computing capabilities.   
+2. multiqc_config.yaml: contains general settings and custom contents used to configure the behavior and appearance of the MultiQC report.
 
 
 
