@@ -32,8 +32,10 @@ By default, the pipeline runs the following [workflow](#workflow):
 ## USAGE
 
  1. **Test with the default test_data**:  
- Run the following: `nextflow run hmas2.nf -profile test`  
+     - Run the following: `nextflow run hmas2.nf -profile test`  
  Depends on your hardware, the test run should be completed in a few minutes. And the output will be in the `test_output` folder  
+     - Alternatively, change directory to the **test_data** folder, and run the following: `./test_pipeline.sh`  
+     The script will automatically run the pipeline with the default test data and compare the output to the expected result and print out **'PASSED ! CSV files match'** if the results match, or **WARNING messages** otherwise.  
 
 2. **Test with your own data** - Make sure to provide path for the 3 required parameters in **nextflow.config** file.    
 
