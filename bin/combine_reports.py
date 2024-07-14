@@ -5,16 +5,197 @@ import argparse
 import os
 import re
 import yaml
+import utilities
 
-'''
-This script reads all report.csv (for each sample) and concantenate them into one single report.csv. It will 
-also add a 'Mean read depth across entire run' row at the end.
+def make_primer_stats_yaml(output_file, primer_stats, oligos_file):
+    '''
+    this method generates a custom content yaml file specific for the multiqc report
+    this yaml file is for the primer pair performance report
 
-This script requires all report.csv file names be passed in a concatenated string as a command line argument.
-'''
+    Parameters
+    ----------
+    output_file: String, output file (yaml) name
+    primer_stats: String, concatenated names of each primer_stats csv file (per sample)
+    oligos_file: String, oligo file name(which contains the primer information)
+
+    Returns: None
+    ----------
+    '''   
+    def create_df(primer_stats, oligos_file):
+        oligo_primers = utilities.Primers(oligos_file)
+        # our primer panel as a dictionary, its value is a list of 3 items
+        # running total: int
+        # (min read count, sample name), tuple
+        # (max read count, sample name), tuple
+        primer_dict = {primer: [] for primer in oligo_primers.pnames}
+
+        #read each report csv file as a df
+        df_list = [pd.read_csv(report, index_col=[0], sep='\t') for report in primer_stats.split()]
+        # each df has the following format (it has only 1 row)
+        #                            primer1 primer2 primer3
+        #sample(abundance count)     10      20      30
+        for df in df_list:
+            df_dict = df.to_dict(orient='list')
+            sample = df.index.to_list()[0]
+            #go through each primer in our original primer panel
+            #check if it exists in the current primer_stats
+            for primer in primer_dict:
+                if primer in df_dict:
+                    read_count = df_dict[primer][0]
+                    if len(primer_dict[primer]) <= 0: #first timer
+                        primer_dict[primer].append(read_count) #running total
+                        primer_dict[primer].append((read_count,sample)) #min 
+                        primer_dict[primer].append((read_count,sample)) #max
+                    else:
+                        primer_dict[primer][0] = primer_dict[primer][0] + read_count
+                        if read_count < primer_dict[primer][1][0]:
+                            primer_dict[primer][1] = (read_count,sample)
+                        elif read_count > primer_dict[primer][2][0]:
+                            primer_dict[primer][2] = (read_count,sample)
+
+        #go through our primer panel again
+        #if one primer has no associated reads at all, mark as 'n/a'
+        #otherwise, calculate the mean reads count, and conver the min/max tuples to String
+        for primer in primer_dict:
+            if len(primer_dict[primer]) <= 0:
+                primer_dict[primer].extend(['n/a']*3)
+            else:
+                primer_dict[primer][0] = primer_dict[primer][0]/len(df_list)
+                primer_dict[primer][1] = f'{primer_dict[primer][1][0]} / {primer_dict[primer][1][1]}'
+                primer_dict[primer][2] = f'{primer_dict[primer][2][0]} / {primer_dict[primer][2][1]}'
+
+        df = pd.DataFrame(primer_dict).transpose()
+        df.columns = ['p_col1', 'p_col2', 'p_col3']
+
+        return df
+
+    # Create headers dictionary
+    headers = {
+        'p_col1': {
+            'title': 'average read count',
+            'description': 'mean reads count per primer pair across all samples',
+            'format': '{:,.1f}',
+        },
+        'p_col2': {
+            'title': 'minimum read count',
+            'description': 'minimum reads count for this primer pair across all samples (if there is a tie, only show the first one)',
+            # 'format': '{:,.3f}',
+            "scale": False
+        },
+        'p_col3': {
+            'title': 'maxmium read count',
+            'description': 'maximum reads count for this primer pair across all samples (if there is a tie, only show the first one)',
+        },
+    }
+
+    # Convert the DataFrame to the required format
+    data_yaml = create_df(primer_stats, oligos_file).to_dict(orient='index')
+
+    # Create the full YAML dictionary
+    yaml_dict = {
+        'id': 'primer_report',
+        'section_name': 'Primer performance report',
+        'description': 'reads count report per primer pair across all samples in this run',
+        'plot_type': 'table',
+        'pconfig': {
+            'id': 'primer_report',
+            'sort_rows': False,
+            'col1_header': 'Primer Name',
+            "no_violin": True,
+        },
+        'headers': headers,
+        'data': data_yaml
+    }
+
+    # Write to a YAML file
+    with open(output_file, 'w') as file:
+        yaml.dump(yaml_dict, file, sort_keys=False)
+
+        
+def make_read_length_yaml(output, read_length, noshow_samples):
+    '''
+    this method generates a custom content yaml file specific for the multiqc report
+    this yaml file is for the final combined reads length report
+
+    Parameters
+    ----------
+    output: String, output file (yaml) name
+    read_length: String, concatenated names of each read_length csv file
+    noshow_samples: List, a list of sample names which does not generate any valid sequences
+
+    Returns: None
+    ----------
+    '''   
+    df_list = [pd.read_csv(report, index_col=[0], sep='\t') for report in read_length.split()]
+    report_df = pd.concat(df_list)
+    report_df.columns = ['l_col1','l_col2','l_col3', 'l_col4']
+    report_df.fillna('n/a', inplace=True)
+    for sample in noshow_samples:
+        report_df.loc[f'{sample}'] = [0, 'n/a', 'n/a', 'n/a']
+
+
+    # Create headers dictionary
+    headers = {
+        'l_col1': {
+            'title': 'total reads(unique) count',
+            'description': 'total high quality unique reads count per sample across all primer pairs',
+            "format": "{:,.0f}",
+        },
+        'l_col2': {
+            'title': 'average read length',
+            'description': 'mean reads length per sample across all primer pairs',
+            'format': '{:,.1f}',
+            "scale": False,
+        },
+        'l_col3': {
+            'title': 'minimum read length',
+            'description': 'minimum reads length per sample across all primer pairs',
+            "scale": False,
+            "format": "{:,.0f}"
+        },
+        'l_col4': {
+            'title': 'maximum read length',
+            'description': 'maximum reads length per sample across all primer pairs',
+            "scale": False,
+            "format": "{:,.0f}"
+        },
+    }
+
+    # Convert the DataFrame to the required format
+    data_yaml = report_df.to_dict(orient='index')
+
+    # Create the full YAML dictionary
+    yaml_dict = {
+        'id': 'read_length_report',
+        'section_name': 'Sample read length report',
+        'description': 'reads length report per sample across all primer pairs in this run',
+        'plot_type': 'table',
+        'pconfig': {
+            'id': 'read_length_report',
+            'sort_rows': False,
+        },
+        'headers': headers,
+        'data': data_yaml
+    }
+
+    # Write to a YAML file
+    with open(output, 'w') as file:
+        yaml.dump(yaml_dict, file, sort_keys=False)
+
 
 def make_report_yaml(output_file, data_df):
+    '''
+    this method generates a custom content yaml file specific for the multiqc report
+    this yaml file is for the final combined hmas summary report
 
+    Parameters
+    ----------
+    output_file: output file (yaml) name
+    data_df: data part of the yaml file in the format of dataframe
+
+    Returns: None
+    ----------
+    '''   
     # Create headers dictionary
     headers = {
         'col1': {
@@ -95,6 +276,13 @@ def parse_argument():
     parser.add_argument('-p', '--reports', metavar = '', required = True, help = 'Specify reports')
     parser.add_argument('-i', '--folder_path', metavar = '', required = True, help = 'Specify folder path for fasta.gz files')
     
+    parser.add_argument('-z', '--pyaml', metavar = '', required = True, help = 'Specify output primer_stats mqc report file')
+    parser.add_argument('-q', '--primer_stats', metavar = '', required = True, help = 'Specify input primer_stats')  
+    parser.add_argument('-l', '--primers', metavar = '', required = True, help = 'Specify primers')  
+
+    parser.add_argument('-x', '--lyaml', metavar = '', required = True, help = 'Specify output read_length mqc report file')
+    parser.add_argument('-r', '--read_length', metavar = '', required = True, help = 'Specify input read_length file')  
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -122,4 +310,5 @@ if __name__ == "__main__":
     #update empty cell to n/a
     report_df.fillna('n/a', inplace=True)
     make_report_yaml(args.yaml, report_df)
-        
+    make_primer_stats_yaml(args.pyaml, args.primer_stats, args.primers)
+    make_read_length_yaml(args.lyaml, args.read_length, noshow_samples)

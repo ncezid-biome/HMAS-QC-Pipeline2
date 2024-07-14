@@ -41,8 +41,12 @@ workflow {
     match_file_ch = search_exact(before_search_ch)
     // collectFile will instead concatenate all the file contents and write it into a single file
     // which is not what we want.  We want to read each file separately, for all the files
-    reports_file_ch = make_count_table(match_file_ch).report.collect()
-    combined_report_ch = combine_reports(reports_file_ch)
+    // reports_file_ch = make_count_table(match_file_ch).report.collect()
+    // primer_stats_ch = make_count_table(match_file_ch).primer_stats.collect()
+    reports_file_ch = make_count_table(match_file_ch, denoisded_reads_ch.unique)
+    combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
+                                         reports_file_ch.primer_stats.collect(), \
+                                         reports_file_ch.read_length.collect())
 
     pear_log_ch = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
     qfilter_log_ch = combine_logs_qfilter(filered_reads_ch.log_csv.collect(), Channel.value('qfilter'))
@@ -64,5 +68,7 @@ workflow {
         .combine(qfilter_log_ch.log)
         .combine(derep_log_ch)
         .combine(denoise_log_ch)
+        .combine(combined_report_ch.primer_stats_mqc)
+        .combine(combined_report_ch.read_length_mqc)
         .combine(combined_report_ch.report_mqc), ch_config_for_multiqc)
 }

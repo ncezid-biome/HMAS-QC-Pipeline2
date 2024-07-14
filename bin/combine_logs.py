@@ -6,9 +6,7 @@ import os
 import re
 
 '''
-This script reads all report.csv (for each sample) and concantenate them into one single report.csv. It will 
-also add a 'Mean read depth across entire run' row at the end.
-
+This script reads all report.csv (for each sample) and concantenate them into one single report.csv. 
 This script requires all report.csv file names be passed in a concatenated string as a command line argument.
 '''
 

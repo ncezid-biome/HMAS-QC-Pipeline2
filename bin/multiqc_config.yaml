@@ -45,3 +45,17 @@ table_cond_formatting_rules:
     fail:
       - lt: 0.9
       - s_contains: "n/a"
+  p_col1:
+    fail:
+      - lt: 10
+      - s_contains: "n/a"
+
+custom_plot_config:
+  primer_report:
+    defaultsort:
+      - column: "p_col1"
+        direction: asc
+  read_length_report:
+    defaultsort:
+      - column: "l_col1"
+        direction: asc
