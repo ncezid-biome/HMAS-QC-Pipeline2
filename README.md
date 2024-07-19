@@ -91,7 +91,9 @@ non-exclusive, transferable license to all users under the terms of the
 later.
 
 All comments, messages, pull requests, and other submissions received through
-CDC including this GitHub page may be subject to applicable federal law, including but not limited to the Federal Records Act, and may be archived. Learn more at [http://www.cdc.gov/other/privacy.html](http://www.cdc.gov/other/privacy.html).
+CDC including this GitHub page may be subject to applicable federal law, including but not limited to the Federal Records Act, and may be archived. Learn more at [http://www.cdc.gov/other/privacy.html](http://www.cdc.gov/other/privacy.html).  
+
+If you're interested in contributing, please read our [CONTRIBUTING guide](/CONTRIBUTING.md).  
 
 ### Records Management Notice
 This repository is not a source of government records, but is a copy to increase
