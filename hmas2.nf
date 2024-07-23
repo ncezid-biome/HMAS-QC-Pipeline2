@@ -41,9 +41,8 @@ workflow {
     match_file_ch = search_exact(before_search_ch)
     // collectFile will instead concatenate all the file contents and write it into a single file
     // which is not what we want.  We want to read each file separately, for all the files
-    // reports_file_ch = make_count_table(match_file_ch).report.collect()
-    // primer_stats_ch = make_count_table(match_file_ch).primer_stats.collect()
-    reports_file_ch = make_count_table(match_file_ch, denoisded_reads_ch.unique)
+    before_count_table_ch = match_file_ch.join(denoisded_reads_ch.unique)
+    reports_file_ch = make_count_table(before_count_table_ch)
     combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
                                          reports_file_ch.primer_stats.collect(), \
                                          reports_file_ch.read_length.collect())

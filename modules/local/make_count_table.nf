@@ -7,8 +7,7 @@ process make_count_table {
     memory = "${params.maxmems}"
 
     input:
-    tuple val(sample), path (match_file)
-    tuple val(sample), path (fasta_file)
+    tuple val(sample), path (match_file), path (fasta_file) 
 
     output:
     path ("${sample}.final.count_table"), emit:count, optional:true
