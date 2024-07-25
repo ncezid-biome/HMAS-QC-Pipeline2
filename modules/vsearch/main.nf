@@ -62,7 +62,8 @@ process denoising {
     '''
     vsearch --cluster_unoise !{fasta} --minsize !{params.denoising_minsize} \
                                       --unoise_alpha !{params.denoising_alpha} \
-                                      --centroids !{sample}.unique.unoise.fasta
+                                      --centroids !{sample}.unique.unoise.fasta \
+                                      --sizein --sizeout
     
     #remove potential chimeras
     vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
