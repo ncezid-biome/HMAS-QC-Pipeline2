@@ -1,5 +1,5 @@
 process hashing {
-    publishDir "${params.outdir}/${sample}", mode: 'copy'
+    publishDir "${params.final_outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     // debug true
     cpus = "${params.mincpus}"

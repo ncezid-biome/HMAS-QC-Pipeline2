@@ -1,5 +1,5 @@
 process combine_logs {
-    // publishDir "${params.outdir}", mode: 'copy'
+    // publishDir "${params.final_outdir}", mode: 'copy'
     tag "combine logs ${module_name}"
     // debug true
 

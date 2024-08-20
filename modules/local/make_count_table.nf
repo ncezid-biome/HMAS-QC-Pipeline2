@@ -1,6 +1,6 @@
 process make_count_table {
-    publishDir "${params.outdir}/${sample}/temp", pattern: "*.count_table", mode: 'copy'
-    publishDir "${params.outdir}/${sample}", pattern: "*.csv", mode: 'copy'
+    publishDir "${params.final_outdir}/${sample}/temp", pattern: "*.count_table", mode: 'copy'
+    publishDir "${params.final_outdir}/${sample}", pattern: "*.csv", mode: 'copy'
     tag "${sample}"
     // debug true
     cpus = "${params.mincpus}"

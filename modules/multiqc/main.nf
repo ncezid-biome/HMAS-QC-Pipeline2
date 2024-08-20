@@ -1,5 +1,5 @@
 process multiqc {
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.final_outdir}", mode: 'copy'
     tag "multiqc"
 
     input:

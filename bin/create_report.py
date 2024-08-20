@@ -74,6 +74,8 @@ def generate_read_length(sample, fasta_file, output):
     '''   
     # Read the sequences from the FASTA file
     sequences = list(SeqIO.parse(fasta_file, "fasta"))
+    # total count of non-unique sequences
+    total_count = [int(record.id.lower().split("size=")[1]) for record in sequences if "size=" in record.id.lower() and record.id.lower().split("size=")[1].isdigit()]
     
     # Calculate the statistics
     num_seqs = len(sequences)
@@ -83,6 +85,7 @@ def generate_read_length(sample, fasta_file, output):
     max_length = max(lengths)
 
     stats = {
+        "num_total_seqs": [sum(total_count)],
         "num_seqs": [num_seqs],
         "avg_len": [avg_length],
         "min_len": [min_length],

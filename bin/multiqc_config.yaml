@@ -1,5 +1,5 @@
 report_header_info:
-  - Pipeline version: v1.2.0
+  - Pipeline version: v1.2.1
   - Contact E-mail: "qtl7@cdc.gov"
   - Project Type: "HMAS Application"
   - Sequencing Platform: "MiSeq High Output V3"
@@ -22,6 +22,7 @@ section_comments:
   denoise: "a vsearch method (cluster_unoise) with UNOISE3 algorithm to perform denoising"
   cutadapt_trimmed_sequences_3: "`This includes the reverse compliment of the 3' primer and any read through sequence beyond that primer. 
   A normal Salmonella HMAS run will have varying sequence lengths trimmed 21-100 bp`"
+  cutadapt_filtered_reads: "`Our HMAS data utilizes paired-end (PE) reads exclusively, rather than single-end (SE) reads`"
 
 remove_sections:
   - fastqc_per_base_sequence_content
@@ -38,22 +39,6 @@ module_order:
   - cutadapt
   - custom_content
 
-# red-highlight rows in 'hmas_run_report' table col1 and col2 (these are unique IDs for these 2 columns)
-# for any value less than 10 for col1 and 0.95 for col2 or it contains 'n/a'
-table_cond_formatting_rules:
-  col1:
-    fail:
-      - lt: 10
-      - s_contains: "n/a"
-  col2:
-    fail:
-      - lt: 0.9
-      - s_contains: "n/a"
-  p_col1:
-    fail:
-      - lt: 10
-      - s_contains: "n/a"
-
 custom_plot_config:
   primer_report:
     defaultsort:
@@ -68,6 +53,8 @@ custom_table_header_config:
   general_stats_table:
     total_sequences:
       format: "{:,.2f}"
+    percent_duplicates:
+      scale: "RdYlGn"
 
 table_columns_visible:
   Cutadapt:
@@ -79,3 +66,73 @@ table_columns_visible:
 read_count_multiplier: 0.001
 read_count_prefix: "K"
 read_count_desc: "thousands"
+
+
+table_cond_formatting_rules:
+  col1:
+    fail:
+      - lt: 30
+      - s_contains: "n/a"
+    warn:
+      - lt: 49.99
+    pass:
+      - gt: 49.99
+  col2:
+    fail:
+      - lt: 0.8
+      - s_contains: "n/a"
+    warn:
+      - lt: 0.8999
+    pass:
+      - lt: 0.9799
+    exe:
+      - gt: 0.9799
+  p_col1:
+    fail:
+      - lt: 30
+      - s_contains: "n/a"
+    warn:
+      - lt: 49.99
+    pass:
+      - gt: 49.99
+
+table_cond_formatting_colours:
+  - exe: "#5bc0de"
+  - pass: "#5cb85c"
+  - warn: "#f0ad4e"
+  - fail: "#d9534f"
+
+report_section_order:
+  hmas_run_report:
+    order: 10
+  read_length_report:
+    order: 20
+  primer_report:
+    order: 30
+  denoise:
+    order: 40
+  dereplication:
+    order: 50
+  qfilter:
+    order: 60
+  pear:
+    order: 70
+
+
+
+# top_modules:
+#   - custom_content:
+#   # - "hmas_run_report":
+
+
+# show_analysis_paths: False
+# show_analysis_time: False
+
+
+# report_section_order:
+#   hmas_run_report:
+#     after: "pear"
+
+
+# exclude_modules:
+#   - general_stats

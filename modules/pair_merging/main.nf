@@ -1,5 +1,5 @@
 process pair_merging {
-    publishDir "${params.outdir}/${sample}/temp", mode: 'copy', pattern: "*.fastq"
+    publishDir "${params.final_outdir}/${sample}/temp", mode: 'copy', pattern: "*.fastq"
     tag "${sample}"
     cpus = "${params.medcpus}"
     errorStrategy 'ignore'

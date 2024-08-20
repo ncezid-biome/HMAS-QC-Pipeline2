@@ -128,14 +128,19 @@ def make_read_length_yaml(output, read_length, noshow_samples):
     '''   
     df_list = [pd.read_csv(report, index_col=[0], sep='\t') for report in read_length.split()]
     report_df = pd.concat(df_list)
-    report_df.columns = ['l_col1','l_col2','l_col3', 'l_col4']
+    report_df.columns = ['l_col0','l_col1','l_col2','l_col3', 'l_col4']
     report_df.fillna('n/a', inplace=True)
     for sample in noshow_samples:
-        report_df.loc[f'{sample}'] = [0, 'n/a', 'n/a', 'n/a']
+        report_df.loc[f'{sample}'] = [0, 0,'n/a', 'n/a', 'n/a']
 
 
     # Create headers dictionary
     headers = {
+        'l_col0': {
+            'title': 'total reads(non-unique) count',
+            'description': 'total high quality reads count per sample across all primer pairs',
+            "format": "{:,.0f}",
+        },
         'l_col1': {
             'title': 'total reads(unique) count',
             'description': 'total high quality unique reads count per sample across all primer pairs',
@@ -202,6 +207,7 @@ def make_report_yaml(output_file, data_df):
             'title': 'Mean read depth',
             'description': 'we include only reads with at least 2 sequence count',
             'format': '{:,.1f}',
+            "scale": False
         },
         'col2': {
             'title': '% of successful primer-pairs',

@@ -1,6 +1,15 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// Define the pipeline version
+def pipeline_version = '1.2.1' // Replace with actual version or load dynamically
+
+// Define the timestamp
+def timestamp = new Date().format("yyyyMMdd_HHmmss")
+
+// Define the output directory with the version and timestamp at runtime
+params.final_outdir = params.outdir ? "${params.outdir}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
+
 
 Channel
     // search for pair-end raw reads files in the given folder or any subfolders
@@ -12,18 +21,18 @@ Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for
 Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
 
 
-include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf'
-include { cutadapt } from './modules/cutadapt/main.nf'
-include { pair_merging } from './modules/pair_merging/main.nf'
+include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
+include { cutadapt } from './modules/cutadapt/main.nf' 
+include { pair_merging } from './modules/pair_merging/main.nf' 
 include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch/main.nf'
-// include { hashing } from './modules/local/hash'
+// include { hashing } from './modules/local/hash' 
 include { combine_reports } from './modules/local/combine_reports.nf'
 include { combine_logs as combine_logs_pear } from './modules/local/combine_logs.nf'
-include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf'
-include { combine_logs as combine_logs_derep } from './modules/local/combine_logs.nf'
-include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs.nf'
-include { make_count_table } from './modules/local/make_count_table.nf'
-include { multiqc } from './modules/multiqc/main.nf'
+include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf' 
+include { combine_logs as combine_logs_derep } from './modules/local/combine_logs.nf' 
+include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs.nf' 
+include { make_count_table } from './modules/local/make_count_table.nf' 
+include { multiqc } from './modules/multiqc/main.nf' 
 
 workflow {
     // Filter out file pairs containing "Undetermined"

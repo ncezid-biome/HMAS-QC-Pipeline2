@@ -1,5 +1,5 @@
 process FASTQC {
-    publishDir "${params.outdir}/${sample}/fastqc", mode: 'copy'
+    publishDir "${params.final_outdir}/${sample}/fastqc", mode: 'copy'
     tag( "${sample}" )
 
     input:
