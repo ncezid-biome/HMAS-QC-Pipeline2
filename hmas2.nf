@@ -9,7 +9,7 @@ def timestamp = new Date().format("yyyyMMdd_HHmmss")
 
 // Define the output directory with the version and timestamp at runtime
 params.final_outdir = params.outdir ? "${params.outdir}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
-
+params.file_extension = "_v${pipeline_version}_${timestamp}"
 
 Channel
     // search for pair-end raw reads files in the given folder or any subfolders

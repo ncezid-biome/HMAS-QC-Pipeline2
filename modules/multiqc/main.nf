@@ -7,7 +7,7 @@ process multiqc {
     path(multiqc_config)
 
     output:
-    path "*multiqc_report.html", emit: report
+    path "*.html", emit: report
     path "*_data"              , emit: data
     path "*_plots"             , optional:true, emit: plots
     path "versions.yml"        , optional:true, emit: versions
@@ -20,6 +20,7 @@ process multiqc {
     def config = multiqc_config ? "--config $multiqc_config" : ''
     """
     multiqc \\
+        -n "multiqc_report${params.file_extension}.html" \\
         --force \\
         $config \\
         .
