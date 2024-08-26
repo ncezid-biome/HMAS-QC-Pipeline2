@@ -1,6 +1,15 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// Define the pipeline version
+def pipeline_version = '1.2.1' // Replace with actual version or load dynamically
+
+// Define the timestamp
+def timestamp = new Date().format("yyyyMMdd_HHmmss")
+
+// Define the output directory with the version and timestamp at runtime
+params.final_outdir = params.outdir ? "${params.outdir}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
+params.file_extension = "_v${pipeline_version}_${timestamp}"
 
 Channel
     // search for pair-end raw reads files in the given folder or any subfolders
@@ -12,18 +21,18 @@ Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for
 Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
 
 
-include { FASTQC as FASTQC_RAW } from './modules/fastqc'
-include { cutadapt } from './modules/cutadapt'
-include { pair_merging } from './modules/pair_merging'
-include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch'
-// include { hashing } from './modules/local/hash'
-include { combine_reports } from './modules/local/combine_reports'
-include { combine_logs as combine_logs_pear } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_derep } from './modules/local/combine_logs'
-include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs'
-include { make_count_table } from './modules/local/make_count_table'
-include { multiqc } from './modules/multiqc'
+include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
+include { cutadapt } from './modules/cutadapt/main.nf' 
+include { pair_merging } from './modules/pair_merging/main.nf' 
+include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch/main.nf'
+// include { hashing } from './modules/local/hash' 
+include { combine_reports } from './modules/local/combine_reports.nf'
+include { combine_logs as combine_logs_pear } from './modules/local/combine_logs.nf'
+include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf' 
+include { combine_logs as combine_logs_derep } from './modules/local/combine_logs.nf' 
+include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs.nf' 
+include { make_count_table } from './modules/local/make_count_table.nf' 
+include { multiqc } from './modules/multiqc/main.nf' 
 
 workflow {
     // Filter out file pairs containing "Undetermined"
@@ -41,8 +50,11 @@ workflow {
     match_file_ch = search_exact(before_search_ch)
     // collectFile will instead concatenate all the file contents and write it into a single file
     // which is not what we want.  We want to read each file separately, for all the files
-    reports_file_ch = make_count_table(match_file_ch).report.collect()
-    combined_report_ch = combine_reports(reports_file_ch)
+    before_count_table_ch = match_file_ch.join(denoisded_reads_ch.unique)
+    reports_file_ch = make_count_table(before_count_table_ch)
+    combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
+                                         reports_file_ch.primer_stats.collect(), \
+                                         reports_file_ch.read_length.collect())
 
     pear_log_ch = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
     qfilter_log_ch = combine_logs_qfilter(filered_reads_ch.log_csv.collect(), Channel.value('qfilter'))
@@ -64,5 +76,7 @@ workflow {
         .combine(qfilter_log_ch.log)
         .combine(derep_log_ch)
         .combine(denoise_log_ch)
+        .combine(combined_report_ch.primer_stats_mqc)
+        .combine(combined_report_ch.read_length_mqc)
         .combine(combined_report_ch.report_mqc), ch_config_for_multiqc)
 }

@@ -12,4 +12,5 @@ dependencies:
   - nextflow=22.10.6
   - multiqc=1.21
   - fastqc=0.12.1
+  - biopython=1.84
 

@@ -1,5 +1,5 @@
 process quality_filtering {
-    publishDir "${params.outdir}/${sample}/temp", mode: 'copy', pattern: "*.fasta"
+    publishDir "${params.final_outdir}/${sample}/temp", mode: 'copy', pattern: "*.fasta"
     tag "${sample}"
     // debug true
 
@@ -24,7 +24,7 @@ process quality_filtering {
 }
 
 process dereplication {
-    publishDir "${params.outdir}/${sample}/temp", mode: 'copy', pattern: "*.fasta"
+    publishDir "${params.final_outdir}/${sample}/temp", mode: 'copy', pattern: "*.fasta"
     tag "${sample}"
 
     input:
@@ -46,7 +46,7 @@ process dereplication {
 }
 
 process denoising {
-    publishDir "${params.outdir}/${sample}", mode: 'copy', pattern: "*.fasta"
+    publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "*.fasta"
     tag "${sample}"
     debug true
     cpus = "${params.mincpus}"
@@ -62,7 +62,8 @@ process denoising {
     '''
     vsearch --cluster_unoise !{fasta} --minsize !{params.denoising_minsize} \
                                       --unoise_alpha !{params.denoising_alpha} \
-                                      --centroids !{sample}.unique.unoise.fasta
+                                      --centroids !{sample}.unique.unoise.fasta \
+                                      --sizein --sizeout
     
     #remove potential chimeras
     vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
@@ -96,7 +97,7 @@ process denoising {
 }
 
 process search_exact {
-    publishDir "${params.outdir}/${sample}/temp", mode: 'copy'
+    publishDir "${params.final_outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
     cpus = "${params.medcpus}"
 

@@ -1,5 +1,5 @@
 report_header_info:
-  - Pipeline version: v1.2.0
+  - Pipeline version: v1.2.1
   - Contact E-mail: "qtl7@cdc.gov"
   - Project Type: "HMAS Application"
   - Sequencing Platform: "MiSeq High Output V3"
@@ -16,10 +16,44 @@ software_versions:
   pear: "0.9.6"
 
 section_comments:
-  pear: "a tool to merge pair-end reads "
-  qfilter: "a vsearch method (fastx_filter) to do quality filtering"
-  dereplication: "a vsearch method (derep_fulllength) to group together duplicate reads"
-  denoise: "a vsearch method (cluster_unoise) with UNOISE3 algorithm to perform denoising"
+  general_stats: "General stats summary table for the raw reads, displaying by default the percentage of duplicate reads, 
+    average read length and total number of sequences in K. Average read length should be ~250bp, and a high (>90%)  
+    duplicate percentage is normal for HMAS data.  Total sequence counts are generally acceptable between 100K and 1000K."
+  fastqc_sequence_counts: "#####Unique read and estimated duplicate read counts for each sample. A high percentage of duplicate 
+    reads (>90%) is expected for HMAS data. Total sequence counts are generally acceptable between 100K and 1000K."
+  fastqc_per_base_sequence_quality: "#####Showing the mean quality value of each bp for each reads. Samples in general will have a 
+    higher quality score than negative controls. R1 typically has higher quality than R2. Samples and positive controls generally 
+    have a higher quality score than negative controls."
+  fastqc_per_sequence_quality_scores: "#####Showing the number of reads with mean quality scores. Most reads should have a phred score 
+    >30. Two peaks, one each for R1 and R2, are usually observed. "
+  fastqc_per_base_n_content: "#####Showing the percentage of base calls at each position a ‘N’ is called. A normal HMAS run does not 
+    have any observable peaks. "
+  cutadapt_filtered_reads: "#####Number of reads with primers successfully trimmed (passing filters) and those failed. ~90% of reads 
+    typically pass this filter. Our HMAS data utilizes paired-end (PE) reads exclusively, rather than single-end (SE) reads."
+  cutadapt_trimmed_sequences_5: "#####Abundance of sequences (count) in each sample with a given length trimmed from the 5’ end of 
+    each read. For the Salmonella HMAS assay, the range of trimmed primer lengths is 20-22bp. "
+  cutadapt_trimmed_sequences_3: "#####This includes the reverse compliment of the 3' primer and any read through sequence beyond that primer. 
+    A normal Salmonella HMAS run will have varying sequence lengths trimmed 21-100 bp."
+  pear: "#####step assembles R1 and R2 for each PE read and performs initial quality checking. Number of successfully assembled (passing) and 
+    un-assembled (failed) reads. Typical samples have <1% of reads failing.  "
+  qfilter: "#####assess the quality of the assembly (from the last step) and remove reads that fail (with one or more expected errors, based 
+    on combined phred scores of the entire read). Shows the number of total reads and removed reads. Typical samples have <0.1% of reads failing."
+  dereplication: "#####step extracts unique sequences for all reads in each sample. **Every read count after this step is in terms of unique sequences.**
+    Showing the number of total reads and the unique reads. A ratio of 5 or larger typically indicates a good mean read depth for this sample. "
+  denoise: "#####step removes unique reads with likely sequencing errors inferred from read frequency and sequence composition. Shows the number of total 
+    and removed unique sequences. It is normal for most unique sequences to be removed as most of the remaining reads have high read frequency hence 
+    only a small percentage of total (non-unique) reads were removed."
+  primer_report: "#####Average, minimum, and maximum read count per primer pair across all samples in the run, with a low(<30x) average read count (**<30x red; 
+    30x~50x yellow; >50x green**) indicating bad primer performance . "
+  read_length_report: "#####For the final high-quality sequences, showing the total read count (unique and non-unique), average read length, 		minimum 
+    and maximum read length for each sample. "
+  hmas_run_report: "#####For negative control samples, mean read depth is usually n/a or 2; anything <=10x is acceptable. Percent successful primer pairs 
+    should be extremely low, n/a or 0-5% commonly seen, and number of successful primer pairs should be <10.  
+
+    #####For positive and passing samples, mean read depth is at least 30x (**<30x red; 30x~50x yellow; >50x green**) and percent successful primer pairs is at 
+    least 90%. (**<80% red for fail; 80%~90% yellow for warning; 90%~98% green for pass; >98% blue for excellence**) "
+  
+
 
 remove_sections:
   - fastqc_per_base_sequence_content
@@ -28,20 +62,108 @@ remove_sections:
   - fastqc_top_overrepresented_sequences
   - fastqc_adapter_content
   - fastqc_sequence_length_distribution
+  - fastqc_per_sequence_gc_content
+  - fastqc_overrepresented_sequences
 
 module_order:
   - fastqc
   - cutadapt
   - custom_content
 
-# red-highlight rows in 'hmas_run_report' table col1 and col2 (these are unique IDs for these 2 columns)
-# for any value less than 10 for col1 and 0.95 for col2 or it contains 'n/a'
+custom_plot_config:
+  primer_report:
+    defaultsort:
+      - column: "p_col1"
+        direction: asc
+  read_length_report:
+    defaultsort:
+      - column: "l_col1"
+        direction: asc
+
+custom_table_header_config:
+  general_stats_table:
+    total_sequences:
+      format: "{:,.2f}"
+    percent_duplicates:
+      scale: "RdYlGn"
+
+table_columns_visible:
+  Cutadapt:
+    percent_trimmed: False
+  FastQC:
+    avg_sequence_length: True
+    percent_gc: False
+
+read_count_multiplier: 0.001
+read_count_prefix: "K"
+read_count_desc: "thousands"
+
+
 table_cond_formatting_rules:
   col1:
     fail:
-      - lt: 10
+      - lt: 30
       - s_contains: "n/a"
+    warn:
+      - lt: 49.99
+    pass:
+      - gt: 49.99
   col2:
     fail:
-      - lt: 0.9
+      - lt: 0.8
       - s_contains: "n/a"
+    warn:
+      - lt: 0.8999
+    pass:
+      - lt: 0.9799
+    exe:
+      - gt: 0.9799
+  p_col1:
+    fail:
+      - lt: 30
+      - s_contains: "n/a"
+    warn:
+      - lt: 49.99
+    pass:
+      - gt: 49.99
+
+table_cond_formatting_colours:
+  - exe: "#5bc0de"
+  - pass: "#5cb85c"
+  - warn: "#f0ad4e"
+  - fail: "#d9534f"
+
+report_section_order:
+  hmas_run_report:
+    order: 10
+  read_length_report:
+    order: 20
+  primer_report:
+    order: 30
+  denoise:
+    order: 40
+  dereplication:
+    order: 50
+  qfilter:
+    order: 60
+  pear:
+    order: 70
+
+
+
+# top_modules:
+#   - custom_content:
+#   # - "hmas_run_report":
+
+
+# show_analysis_paths: False
+# show_analysis_time: False
+
+
+# report_section_order:
+#   hmas_run_report:
+#     after: "pear"
+
+
+# exclude_modules:
+#   - general_stats
