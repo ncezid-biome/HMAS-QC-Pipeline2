@@ -14,7 +14,8 @@ params.file_extension = "_v${pipeline_version}_${timestamp}"
 Channel
     // search for pair-end raw reads files in the given folder or any subfolders
    .fromFilePairs(["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"], size: 2)
- .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
+//   .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
+    .map{ reads -> tuple(reads[0].replaceAll(~/_L[0-9]+/,""), reads[1]) }
   .set { paired_reads }
 
 Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for_multiqc }

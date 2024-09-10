@@ -41,7 +41,7 @@ By default, the pipeline runs the following [workflow](#workflow):
 
     -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
     -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
-    -  **params.primer**: this is the path (***absolute path recommended***) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
+    -  **params.primer**: this is the path (***absolute path required***, append it with $PWD/ if it's in the same work directory of the hmas2.nf file) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
     **Run the following**:  
     `nextflow run hmas2.nf`    

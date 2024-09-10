@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Define file paths
-generated_csv="test_output/report_sorted.csv"
-expected_csv="test_data/report_ref_sorted.csv"
-
 # Run Nextflow pipeline
 cd ..
 nextflow run hmas2.nf -profile test
+
+latest_testoutput=$(ls -1t test_output* | head -n 1 | sed 's/[,;:]//g')
+
+# Define file paths
+generated_csv="$latest_testoutput/report_sorted.csv"
+expected_csv="test_data/report_ref_sorted.csv"
 
 # Check if the pipeline run was successful
 if [ $? -ne 0 ]; then
@@ -14,8 +16,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+report_file=$(find $latest_testoutput -type f -name 'report*.csv')
+
 # Sort the generated CSV file and the expected CSV file
-sort test_output/report.csv > "$generated_csv"
+sort "$report_file" > "$generated_csv"
 sort test_data/report_ref.csv > "$expected_csv"
 
 # Compare the sorted CSV files

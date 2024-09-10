@@ -252,7 +252,9 @@ def list_files_in_folder(folder_path):
     files = []
     #MF6-3-M3235-23-017_S39_L001_R2_001.fastq.gz will turn into
     #MF6-3-M3235-23-017
-    pattern = r'_S[0-9]+_L[0-9]+_R.*\.fastq\.gz'
+    #MF6-3-M3235-23-017_S39
+    # pattern = r'_S[0-9]+_L[0-9]+_R.*\.fastq\.gz'
+    pattern = r'_L[0-9]+_R.*\.fastq\.gz'
 
     #traverse through the specified folder and all its subdirectories
     for root, _, filenames in os.walk(folder_path):
