@@ -8,7 +8,7 @@ def pipeline_version = '1.2.1' // Replace with actual version or load dynamicall
 def timestamp = new Date().format("yyyyMMdd_HHmmss")
 
 // Define the output directory with the version and timestamp at runtime
-params.final_outdir = params.outdir ? "${params.outdir}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
+params.final_outdir = params.outdir ? "${params.outdir.replaceAll('/+$', '')}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
 params.file_extension = "_v${pipeline_version}_${timestamp}"
 
 Channel
