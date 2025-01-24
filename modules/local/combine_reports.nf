@@ -7,6 +7,7 @@ process combine_reports {
     path (reports_file)
     path (primer_stats)
     path (read_length)
+    path (ch_primer_file)
 
     output:
     path ("report*.csv"), emit: csv, optional:true
@@ -20,7 +21,7 @@ process combine_reports {
     # Ex.  sample1.csv sample2.csv sample3.csv 
     # which will then be split by the script to read each csv file
     combine_reports.py -o "report!{params.file_extension}.csv" -p "!{reports_file}" -i "!{params.reads}" -y report_mqc.yaml \
-                       -q "!{primer_stats}" -z primer_stats_mqc.yaml -l !{params.primer} \
+                       -q "!{primer_stats}" -z primer_stats_mqc.yaml -l !{ch_primer_file} \
                        -r "!{read_length}" -x read_length_mqc.yaml
 
     '''

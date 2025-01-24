@@ -20,6 +20,7 @@ Channel
 
 Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for_multiqc }
 Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
+Channel.fromPath(params.primer, checkIfExists: true).set { ch_primer_file }
 
 
 include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
@@ -41,7 +42,9 @@ workflow {
     !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
 
     FASTQC_RAW(paired_reads)
-    removed_primer_reads_ch = cutadapt(paired_reads)
+ // removed_primer_reads_ch = cutadapt(paired_reads)
+    paired_reads.combine(ch_primer_file).set{ ch_for_cutadapt }
+    removed_primer_reads_ch = cutadapt(ch_for_cutadapt)
     merged_reads_ch = pair_merging(removed_primer_reads_ch.cutadapt_fastq)
     filered_reads_ch = quality_filtering(merged_reads_ch.fastq)
     unique_reads_ch = dereplication(filered_reads_ch.fasta)
@@ -52,10 +55,13 @@ workflow {
     // collectFile will instead concatenate all the file contents and write it into a single file
     // which is not what we want.  We want to read each file separately, for all the files
     before_count_table_ch = match_file_ch.join(denoisded_reads_ch.unique)
-    reports_file_ch = make_count_table(before_count_table_ch)
+    before_count_table_ch.combine(ch_primer_file).set{ ch_for_make_count_table }
+    reports_file_ch = make_count_table(ch_for_make_count_table)
+    // reports_file_ch = make_count_table(before_count_table_ch)
     combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
                                          reports_file_ch.primer_stats.collect(), \
-                                         reports_file_ch.read_length.collect())
+                                         reports_file_ch.read_length.collect(), \
+                                         ch_primer_file)
 
     pear_log_ch = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
     qfilter_log_ch = combine_logs_qfilter(filered_reads_ch.log_csv.collect(), Channel.value('qfilter'))
