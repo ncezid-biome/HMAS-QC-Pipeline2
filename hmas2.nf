@@ -1,6 +1,14 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// LOGGING cofig
+def logMessage(msg) {
+    def LOG_FILE = "step_mothur_pipeline.log"
+    new File("${LOG_FILE}").withWriterAppend { writer ->
+        writer.println("[${new Date()}] $msg")
+    }
+}
+
 // Define the pipeline version
 def pipeline_version = '1.2.1' // Replace with actual version or load dynamically
 
@@ -37,6 +45,10 @@ include { make_count_table } from './modules/local/make_count_table.nf'
 include { multiqc } from './modules/multiqc/main.nf' 
 
 workflow {
+    logMessage("step_mothur started")
+    logMessage("processing reads from: ${params.reads}")
+    logMessage("will save results into: ${params.final_outdir}")
+    
     // Filter out file pairs containing "Undetermined"
     paired_reads = paired_reads.filter { pair -> 
     !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
@@ -86,4 +98,19 @@ workflow {
         .combine(combined_report_ch.primer_stats_mqc)
         .combine(combined_report_ch.read_length_mqc)
         .combine(combined_report_ch.report_mqc), ch_config_for_multiqc)
+}
+
+// Capture Nextflow pipeline completion stats and append to the log file
+workflow.onComplete {
+    logMessage("step_mothur finished!")
+    def stats = workflow.stats
+    logMessage("  - Processes executed: ${stats.succeedCount}")
+    logMessage("  - Processes failed: ${stats.failedCount}")
+    logMessage("  - Processes cached: ${stats.cachedCount}")
+    logMessage("  - Workflow duration: ${workflow.duration}")
+}
+
+// Capture pipeline errors
+workflow.onError { 
+    logMessage("${workflow.errorReport}")
 }
