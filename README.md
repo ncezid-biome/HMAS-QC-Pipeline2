@@ -16,7 +16,7 @@ By default, the pipeline runs the following [workflow](#workflow):
 - Denoising (vsearch)  
 - Reporting (custom scripts)
 - Aggregate reports ([multqic](https://multiqc.info/))  
-- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules.   
+- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules. ([**MultiQC report description**](MultiQC_report_text_description.pdf))   
 <p align="center"><img src="HMAS_MultiQC_REPORT.png" alt="HMAS-QC-Pipeline2" width="750"></p>
 
 ## Installation  
