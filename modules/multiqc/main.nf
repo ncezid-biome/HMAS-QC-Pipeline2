@@ -19,8 +19,9 @@ process multiqc {
     def args = task.ext.args ?: ''
     def config = multiqc_config ? "--config $multiqc_config" : ''
     """
+    mqc_file_name=\$(basename "$params.final_outdir")
     multiqc \\
-        -n "multiqc_report${params.file_extension}.html" \\
+        -n "\${mqc_file_name}.html" \\
         --force \\
         $config \\
         .
