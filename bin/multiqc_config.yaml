@@ -1,19 +1,7 @@
-report_header_info:
-  - Pipeline version: v1.2.1
-  - Contact E-mail: "qtl7@cdc.gov"
-  - Project Type: "HMAS Application"
-  - Sequencing Platform: "MiSeq High Output V3"
-  - Sequencing Setup: "2x250"
-  - Assay: ASY-SMNLA v1
-  - Lot ID: 20268_ORP_21.O#
-
 custom_logo: "step_mothur_logo.png"
 custom_logo_url: "https://github.com/ncezid-biome/HMAS-QC-Pipeline2"
 custom_logo_title: "Step-mothur"
 
-software_versions:
-  vsearch: "2.14.1"
-  pear: "0.9.6"
 
 section_comments:
   general_stats: "General stats summary table for the raw reads, displaying by default the percentage of duplicate reads, 
@@ -148,6 +136,8 @@ report_section_order:
     order: 60
   pear:
     order: 70
+  cli-html:
+    order: -1
 
 
 

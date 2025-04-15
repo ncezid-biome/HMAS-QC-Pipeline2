@@ -7,7 +7,7 @@ process make_count_table {
     memory = "${params.maxmems}"
 
     input:
-    tuple val(sample), path (match_file), path (fasta_file) 
+    tuple val(sample), path (match_file), path (fasta_file), path (ch_primer_file)
 
     output:
     path ("${sample}.final.count_table"), emit:count, optional:true
@@ -19,7 +19,7 @@ process make_count_table {
     '''
     if [ -s !{match_file} ]; then
         make_count_table.py -o !{sample}.final.count_table -m !{match_file}
-        create_report.py -s !{sample} -c !{sample}.final.count_table -p !{params.primer} -o !{sample}.csv \
+        create_report.py -s !{sample} -c !{sample}.final.count_table -p !{ch_primer_file} -o !{sample}.csv \
                          -q !{sample}.primer_stats.tsv -f !{fasta_file} -l !{sample}.read_length.tsv
     else
         echo "!{match_file} is empty !"

@@ -16,7 +16,7 @@ By default, the pipeline runs the following [workflow](#workflow):
 - Denoising (vsearch)  
 - Reporting (custom scripts)
 - Aggregate reports ([multqic](https://multiqc.info/))  
-- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules.   
+- Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules. ([**MultiQC report description**](MultiQC_report_text_description.pdf))   
 <p align="center"><img src="HMAS_MultiQC_REPORT.png" alt="HMAS-QC-Pipeline2" width="750"></p>
 
 ## Installation  
@@ -39,9 +39,9 @@ By default, the pipeline runs the following [workflow](#workflow):
 
 2. **Test with your own data** - Make sure to provide path for the 3 required parameters in **nextflow.config** file.    
 
-    -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern.  
+    -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern. The pipeline will recursively retrieve reads files with that pattern. 
     -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
-    -  **params.primer**: this is the path (***absolute path required***, prefix it with $PWD/ if it's in the same work directory of the hmas2.nf file) to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
+    -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** (by default we use reverse complement of reverse_primer in primer file) and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
     **Run the following**:  
     `nextflow run hmas2.nf`    
@@ -50,7 +50,7 @@ By default, the pipeline runs the following [workflow](#workflow):
  `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
 
 3. **nextflow.config file**:  
-Feel free to update the file as necessary. But it is recommended to fill in the `params.reads, params.outdir, params.primer`, update the `CPU, memory, params.maxcutadapts` parameters based on your available hardware, and leave other parameters intact unless you have strong evidence to update them otherwise.  
+Feel free to update the file as necessary. It is recommended to specify `params.reads, params.outdir, and params.primer`. Additionally, adjust the `CPU, memory, and params.maxcutadapts` parameters based on your available computing resources. Leave the remaining parameters unchanged until you are confident in running the pipeline.  
 
 4.  **multiqc_config.yaml file in bin/ folder**:  
 Feel free to update the file as necessary. This file controls the display in the MultiQC htmal report.  
@@ -61,7 +61,7 @@ Feel free to update the file as necessary. This file controls the display in the
 <p align="center"><img src="HMAS2_1.svg" alt="HMAS-QC-Pipeline2" width="600"></p>  
 
 **note:** 
-1. the optional count table contains abundance information for the corresponding high quality unique sequences (fasta file). It is only optional because the abundance information is also embedded in the seq_ID in the fasta file. For example, size=551 is the abundance value for this particular sequence.    `>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`
+1. In addition to the optional count table file in the output folder, the sequence abundance information for the corresponding high-quality unique sequences is embedded directly within the FASTA file. This information is included in the sequence ID. For example, size=551 indicates the abundance value for this specific sequence.   `>M03235:107:000000000-KPP6Y:1:1101:19825:4748=OG0001064primerGroup7=isolateD-3-M3235-23-014;size=551`
 
 ## Notices
 

@@ -5,6 +5,7 @@ process multiqc {
     input:
     path ('*')
     path(multiqc_config)
+    path(all_versions)
 
     output:
     path "*.html", emit: report
@@ -17,12 +18,21 @@ process multiqc {
 
     script:
     def args = task.ext.args ?: ''
-    def config = multiqc_config ? "--config $multiqc_config" : ''
     """
+    mqc_file_name=\$(basename "$params.final_outdir")
+    cp $multiqc_config ${multiqc_config}.bak
+    update_multiqc_config.py ${multiqc_config}.bak '${params.multiqc_header}' $all_versions
+
+    if [ -n "$multiqc_config" ]; then
+        config="--config ${multiqc_config}.bak"
+    else
+        config=""
+    fi
+
     multiqc \\
-        -n "multiqc_report${params.file_extension}.html" \\
+        -n "\${mqc_file_name}.html" \\
         --force \\
-        $config \\
+        \$config \\
         .
 
     #cat <<-END_VERSIONS > versions.yml

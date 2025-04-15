@@ -306,6 +306,10 @@ if __name__ == "__main__":
     original_samples = list_files_in_folder(args.folder_path)
     noshow_samples = set(original_samples) - set(report_df.index)
 
+    #remove 'undetermined' sample name from our report
+    noshow_samples = {sample for sample in noshow_samples if not (isinstance(sample, str) and 
+        sample.lower().startswith('undetermined'))}
+
     #add 'Mean read depth across entire run' as a separate line at the end
     report_df.loc['Mean read depth across entire run'] = [int(round(report_df['Mean read depth'].mean(),0)),None,None]
     

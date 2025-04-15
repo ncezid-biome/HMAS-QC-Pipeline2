@@ -9,9 +9,10 @@ process quality_filtering {
     output:
     tuple val(sample), path ("${sample}.fasta"), emit: fasta, optional:true
     path ("${sample}_qfilter_log.csv"), emit: log_csv, optional: true
+    path "versions.yml"         , emit: versions, optional: true
 
     shell:
-    '''
+    """
     vsearch --fastx_filter !{fastq} --fastq_maxee 1 --fastaout !{sample}.fasta \
                             --log !{sample}_qfilter.log
     parse_qfilter_log.py -p !{sample}_qfilter.log -s !{sample} -o !{sample}_qfilter_log.csv
@@ -19,7 +20,10 @@ process quality_filtering {
     #remove space between seq_id and =adapter 
     #choose not to use linux sed , because it could be very slow
     remove_space.py -f !{sample}.fasta
-    '''
+
+    echo "!{task.process}:" > versions.yml
+    echo "  vsearch: \$(vsearch 2>&1 | head -n 1 | cut -d ' ' -f2 | cut -d '_' -f1 | sed 's/^v//')" >> versions.yml
+    """
 
 }
 
