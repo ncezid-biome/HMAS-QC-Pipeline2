@@ -11,9 +11,10 @@ process pair_merging {
     tuple val(sample), path ("${sample}.fastq"), emit: fastq, optional: true
     tuple val(sample), path ("${sample}_pear.log"), emit: log, optional: true
     path ("${sample}_pear_log.csv"), emit: log_csv, optional: true
+    path ("versions.yml"), emit: versions, optional: true
 
     shell:
-    '''
+    """
     if [ -s !{reads1} ] && [ -s !{reads2} ]; then
         pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
                                                 -m !{params.merging_maxlength} \
@@ -25,5 +26,8 @@ process pair_merging {
         echo "either !{reads1} or !{reads2} is empty !"
     fi
 
-    '''
+    echo "!{task.process}:" > versions.yml
+    echo "  pear: \$(pear 2>&1 | sed -n 's/^PEAR v\\([0-9.]*\\).*/\\1/p')" >> versions.yml
+
+    """
 }

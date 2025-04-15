@@ -1,5 +1,5 @@
 process combine_reports {
-    publishDir "${params.final_outdir}", mode: 'copy'
+    // publishDir "${params.final_outdir}", mode: 'copy'
     tag "combine reports"
     // debug true
 
@@ -14,6 +14,7 @@ process combine_reports {
     path ("report_mqc.yaml"), emit: report_mqc, optional:true
     path ("primer_stats_mqc.yaml"), emit: primer_stats_mqc, optional:true
     path ("read_length_mqc.yaml"), emit: read_length_mqc, optional:true
+    path ("versions.yml"), emit: versions, optional: true
 
     shell:
     '''
@@ -23,6 +24,9 @@ process combine_reports {
     combine_reports.py -o "report!{params.file_extension}.csv" -p "!{reports_file}" -i "!{params.reads}" -y report_mqc.yaml \
                        -q "!{primer_stats}" -z primer_stats_mqc.yaml -l !{ch_primer_file} \
                        -r "!{read_length}" -x read_length_mqc.yaml
+
+    echo "!{task.process}:" > versions.yml
+    echo "  python: $(python --version 2>&1 | awk '{print $2}')" >> versions.yml
 
     '''
 

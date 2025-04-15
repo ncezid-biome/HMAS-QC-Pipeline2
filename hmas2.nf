@@ -9,22 +9,62 @@ def logMessage(msg) {
     }
 }
 
-// Define the pipeline version
-def pipeline_version = '1.2.1' // Replace with actual version or load dynamically
 
 // Define the timestamp
 def timestamp = new Date().format("yyyyMMdd_HHmmss")
 
 // Define the output directory with the version and timestamp at runtime
-params.final_outdir = params.outdir ? "${params.outdir.replaceAll('/+$', '')}_v${pipeline_version}_${timestamp}" : "hmas2_results_v${pipeline_version}_${timestamp}"
-params.file_extension = "_v${pipeline_version}_${timestamp}"
+params.final_outdir = params.outdir ? "${params.outdir.replaceAll('/+$', '')}_v${params.pipeline_version}_${timestamp}" : "hmas2_results_v${params.pipeline_version}_${timestamp}"
+params.file_extension = "_v${params.pipeline_version}_${timestamp}"
 
+// Track occurrences of read names
+// updated to guard against name collision in FASTQ files. In case of dupplicate name
+// FASTQ files, they'll be appended with _2, _3 etc. (updated on disk as well)
+def name_counts = [:]
 Channel
     // search for pair-end raw reads files in the given folder or any subfolders
-   .fromFilePairs(["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"], size: 2)
-//   .map{ reads -> tuple(reads[0].replaceAll(~/_S[0-9]+_L[0-9]+/,""), reads[1]) }
-    .map{ reads -> tuple(reads[0].replaceAll(~/_L[0-9]+/,""), reads[1]) }
-  .set { paired_reads }
+    .fromFilePairs(
+        ["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"],
+        size: 2
+    )
+    .map { reads_name, reads_paths ->
+        // Remove _L### from the sample name
+        def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '')
+
+        // If this name has been seen before, increment counter and append suffix
+        def count = name_counts.get(cleaned_name, 0) + 1
+        name_counts[cleaned_name] = count
+
+        // Append suffix only if it's a duplicate (i.e., count > 1)
+        def final_name = (count > 1) ? "${cleaned_name}_${count}" : cleaned_name
+
+        // List to hold the updated paths
+        def updated_paths = []
+
+        // Rename the files only for duplicates
+        if (count > 1) {
+            reads_paths.each { path ->
+                def base_name = path.getName()
+                def new_name = base_name.replaceAll(cleaned_name, final_name)
+                def new_path = path.getParent().resolve(new_name)
+
+                // Rename the file (i.e., update the path)
+                path.renameTo(new_path)
+                // Optionally, print a message to confirm renaming
+                println "Renamed: ${path} to ${new_path}"
+
+                // Add the new updated path to the list
+                updated_paths << new_path
+            }
+        } else {
+            // For non-duplicates, use the original read paths
+            updated_paths = reads_paths
+        }
+
+        // Return the final name and the updated paths (either renamed or original)
+        tuple(final_name, updated_paths)
+    }
+    .set { paired_reads }
 
 Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for_multiqc }
 Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
@@ -80,6 +120,34 @@ workflow {
     derep_log_ch = combine_logs_derep(unique_reads_ch.log_csv.collect(), Channel.value('dereplication'))
     denoise_log_ch = combine_logs_denoise(denoisded_reads_ch.log_csv.collect(), Channel.value('denoise'))
 
+    process make_command_yaml {
+
+        output:
+        path "cli_mqc.txt" , optional:true, emit: CLI
+
+        script:
+        """
+        parse_commandline.py \
+            --cmdline "${workflow.commandLine}" \
+            --params_str "--reads ${params.reads} --primer ${params.primer}" \
+            --output cli_mqc.txt
+        """
+
+    }
+    make_command_yaml_ch = make_command_yaml()
+
+    // mix all the version files into one channel
+    all_versions = Channel
+        .empty()
+        .mix(merged_reads_ch.versions)
+        .mix(filered_reads_ch.versions)
+        .mix(combined_report_ch.versions)
+
+    collected_versions = all_versions
+        .collectFile(name: 'software_versions.yml')
+        .ifEmpty { error "No versions collected!" }
+
+
     // add fastqc and cutadapt log files (these are existing modules in MultiQC)
     Channel.empty()
         .mix( FASTQC_RAW.out.fastqc_results )
@@ -97,7 +165,8 @@ workflow {
         .combine(denoise_log_ch)
         .combine(combined_report_ch.primer_stats_mqc)
         .combine(combined_report_ch.read_length_mqc)
-        .combine(combined_report_ch.report_mqc), ch_config_for_multiqc)
+        .combine(make_command_yaml_ch.CLI)
+        .combine(combined_report_ch.report_mqc), ch_config_for_multiqc, collected_versions)
 }
 
 // Capture Nextflow pipeline completion stats and append to the log file
