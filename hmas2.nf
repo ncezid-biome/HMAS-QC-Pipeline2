@@ -41,23 +41,29 @@ Channel
         // List to hold the updated paths
         def updated_paths = []
 
-        // Rename the files only for duplicates
         if (count > 1) {
             reads_paths.each { path ->
                 def base_name = path.getName()
-                def new_name = base_name.replaceAll(cleaned_name, final_name)
+                def suffix = count
+                def new_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${suffix}")
                 def new_path = path.getParent().resolve(new_name)
 
-                // Rename the file (i.e., update the path)
-                path.renameTo(new_path)
-                // Optionally, print a message to confirm renaming
-                println "Renamed: ${path} to ${new_path}"
+                // Keep incrementing suffix if file already exists
+                while (new_path.exists()) {
+                    suffix += 1
+                    new_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${suffix}")
+                    new_path = path.getParent().resolve(new_name)
+                }
 
-                // Add the new updated path to the list
+                // Update name_counts for this new suffix
+                name_counts[cleaned_name] = suffix
+
+                // Rename the file
+                path.renameTo(new_path)
+                println "Renamed: ${path} to ${new_path}"
                 updated_paths << new_path
             }
         } else {
-            // For non-duplicates, use the original read paths
             updated_paths = reads_paths
         }
 
@@ -145,7 +151,7 @@ workflow {
 
     collected_versions = all_versions
         .collectFile(name: 'software_versions.yml')
-        .ifEmpty { error "No versions collected!" }
+        .ifEmpty([]) // returns an empty list if nothing is collected
 
 
     // add fastqc and cutadapt log files (these are existing modules in MultiQC)
