@@ -41,16 +41,19 @@ By default, the pipeline runs the following [workflow](#workflow):
 
     -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern. The pipeline will recursively retrieve reads files with that pattern. 
     -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
-    -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, **_reverse complement of reverse_primer_** (by default we use reverse complement of reverse_primer in primer file) and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
+    -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
     **Run the following**:  
     `nextflow run hmas2.nf`    
 
-    **note:** the alternative is to provide those 3 parameters at the command line, for example:  
- `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`  
+    **note:**  
+    - the alternative is to provide those 3 parameters at the command line, for example:  
+ `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`    
+    - you can also `qsub` running the pipeline on a remote server. We have a `qsub_sm.sh` script you can use as a reference.  
 
 3. **nextflow.config file**:  
-Feel free to update the file as necessary. It is recommended to specify `params.reads, params.outdir, and params.primer`. Additionally, adjust the `CPU, memory, and params.maxcutadapts` parameters based on your available computing resources. Leave the remaining parameters unchanged until you are confident in running the pipeline.  
+Feel free to update the file as necessary. It is recommended to specify `params.reads, params.outdir, and params.primer`. Additionally, adjust the `CPU, memory, and params.maxcutadapts` parameters based on your available computing resources. Leave the remaining parameters unchanged until you are confident in running the pipeline.   
+Particularly we include the multiqc report header information here which you adjust as needed.   
 
 4.  **multiqc_config.yaml file in bin/ folder**:  
 Feel free to update the file as necessary. This file controls the display in the MultiQC htmal report.  

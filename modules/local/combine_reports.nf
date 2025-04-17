@@ -1,5 +1,5 @@
 process combine_reports {
-    // publishDir "${params.final_outdir}", mode: 'copy'
+    publishDir "${params.final_outdir}", mode: 'copy', pattern: "*.csv"
     tag "combine reports"
     // debug true
 
