@@ -36,5 +36,5 @@ jobs:
         shell: bash -l {0}  # ensures Conda activation
         run: |
           cd test_data
-          chmod +x ./test_pipeline.sh
-          ./test_pipeline.sh
+          chmod +x ./test_pipeline_ci.sh
+          ./test_pipeline_ci.sh
