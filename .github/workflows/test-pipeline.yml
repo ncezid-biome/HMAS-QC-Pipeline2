@@ -1,0 +1,40 @@
+name: Test HMAS-QC-Pipeline2
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java (required for Nextflow)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+
+      - name: Set up Conda and create HMAS environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-activate-base: false
+          activate-environment: hmas
+          environment-file: bin/hmas.yaml
+
+      - name: Run test pipeline
+        shell: bash -l {0}  # ensures Conda activation
+        run: |
+          cd test_data
+          chmod +x ./test_pipeline.sh
+          ./test_pipeline.sh
