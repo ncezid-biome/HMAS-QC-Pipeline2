@@ -4,7 +4,7 @@
 cd ..
 nextflow run hmas2.nf -profile ci
 
-latest_testoutput=$(ls -1t test_output* | head -n 1 | sed 's/[,;:]//g')
+latest_testoutput=$(find . -maxdepth 1 -type d -name 'test_output*' | sort -r | head -n 1)
 
 # Define file paths
 generated_csv="$latest_testoutput/report_sorted.csv"
