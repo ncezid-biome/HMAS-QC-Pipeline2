@@ -26,14 +26,18 @@ source /etc/profile
 
 # Load conda if needed (adjust path as needed)
 # ls ~/miniconda3/etc/profile.d/conda.sh  or: which conda (check where is the conda in your system)
-source ~/miniconda3/etc/profile.d/conda.sh
+#source ~/miniconda3/etc/profile.d/conda.sh
 
 # Activate conda environment (adjust name as needed)
-conda activate hmas_mqc_07132024
+#conda activate hmas_mqc_07132024
+
+# load nextflow if you don't have the appropriate conda env 
+ml nextflow/24.04.2
 
 nextflow run hmas2.nf \
-	--primer /scicomp/groups-pure/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_pilot/step_mothur/HMAS-QC-Pipeline2/M3235_22_024.oligos \
-	--reads /scicomp/groups-pure/OID/NCEZID/DFWED/EDLB/projects/CIMS/HMAS_pilot/prod/Incoming2/HMAS_101_KY_PRJNA23040H \
-	--outdir HMAS_101_KY
+	--primer YOUR_PRIMER_FILE \
+	--reads YOUR_INPUT_READS_FOLDER \
+	--outdir YOUR_OUTPUT_FOLDER \
+	-profile singularity
 
 

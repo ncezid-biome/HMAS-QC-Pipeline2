@@ -2,7 +2,7 @@
 
 # Run Nextflow pipeline
 cd ..
-nextflow run hmas2.nf -profile ci
+nextflow run hmas2.nf -profile test,git_action,singularity
 
 latest_testoutput=$(find . -maxdepth 1 -type d -name 'test_output*' | sort -r | head -n 1)
 
