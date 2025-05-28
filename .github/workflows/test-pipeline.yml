@@ -25,15 +25,10 @@ jobs:
           curl -s https://get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
 
-      - name: Set up Conda and create HMAS environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-activate-base: false
-          activate-environment: hmas
-          environment-file: bin/hmas.yaml
+      - name: Set up Singularity (via Apptainer)
+        uses: eWaterCycle/setup-apptainer@v2
 
       - name: Run test pipeline
-        shell: bash -l {0}  # ensures Conda activation
         run: |
           cd test_data
           chmod +x ./test_pipeline_ci.sh
