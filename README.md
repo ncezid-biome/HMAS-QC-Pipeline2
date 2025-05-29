@@ -25,14 +25,27 @@ By default, the pipeline runs the following [workflow](#workflow):
 1. Copy the Github repository to a folder  
 `git clone https://github.com/ncezid-biome/HMAS-QC-Pipeline2.git`   
 
-2.  We recommend using conda for all required dependencies. You can create a conda env with our provided yaml file. For that, you will run the following:   
-    -  `conda env create -n hmas -f bin/hmas.yaml` (or `mamba env create -n hmas -f bin/hmas.yaml` for speed)   
-    -   `conda activate hmas`  
+2. There are 2 ways to load the required dependencies: a) through a conda environment, or b) our docker image (it's automatically pulled the first time when you run the pipeline. You will only need to install nextflow/java).  
+    - To install through a conda environment you will run the following:   
+        ```bash
+        conda env create -n hmas -f bin/hmas.yaml  
+        ```
+        or
+        ```bash
+        mamba env create -n hmas -f bin/hmas.yaml
+        ```
+        for speed, then
+        ```bash
+        conda activate hmas
+        ``` 
+    - To install nextflow/java (with the docker image approach), follow this <a href="https://www.nextflow.io/docs/stable/install.html" target="_blank">Nextflow Installation Guide</a>
+
+
 
 ## USAGE
 
  1. **Test with the default test_data**:  
-     - Run the following: `nextflow run hmas2.nf -profile test`  
+     - Run the following: `nextflow run hmas2.nf -profile test`  with conda  or `nextflow run hmas2.nf -profile test,singularity` with docker image.  
  Depends on your hardware, the test run should be completed in a few minutes. And the output will be in the `test_output` folder  
      - Alternatively, change directory to the **test_data** folder, and run the following: `./test_pipeline.sh`  
      The script will automatically run the pipeline with the default test data and compare the output to the expected result and print out **'PASSED ! CSV files match'** if the results match, or **WARNING messages** otherwise.  
@@ -44,7 +57,7 @@ By default, the pipeline runs the following [workflow](#workflow):
     -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer', forward_primer, reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
 
     **Run the following**:  
-    `nextflow run hmas2.nf`    
+    `nextflow run hmas2.nf`  with conda, or  `nextflow run hmas2.nf -profile singularity`  with docker image    
 
     **note:**  
     - the alternative is to provide those 3 parameters at the command line, for example:  

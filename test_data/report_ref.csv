@@ -1,15 +1,12 @@
 ,Mean read depth,"% of successful primer-pairs
 (has at least 2 amplicons in the sample)","# of primer pairs with more than 2 amplicons mapping
 over total primer-pairs"
-2014K_0979_S1_2,2.1,0.033, 15 / 451
-2010K_0968_S1,58.8,0.98, 442 / 451
-2010K_1649_S1,115.1,0.987, 445 / 451
-2010K_2370_S1,199.4,0.987, 445 / 451
+stool-M71228-250508_S30,49.6,0.996, 449 / 451
+2014K_0979_S13,2.1,0.033, 15 / 451
+stool-M71228-250508_S34,8.9,0.044, 20 / 451
 Water1_S1,2.1,0.035, 16 / 451
-2012K_0845_S1,39.0,0.949, 428 / 451
-2014K_0979_S1,2.1,0.033, 15 / 451
-Mean read depth across entire run,60.0,,
-2013K-1153_S11,,,
-NC-Water_S10_2,,,
+2010K_0968_S3,58.8,0.98, 442 / 451
+2012K_0845_S28,39.0,0.949, 428 / 451
+2010K_2370_S4,199.4,0.987, 445 / 451
+Mean read depth across entire run,51.0,,
 NC-Water_S10,,,
-NC-HEC_S8,,,
