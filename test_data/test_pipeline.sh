@@ -2,7 +2,7 @@
 
 # Run Nextflow pipeline
 cd ..
-nextflow run hmas2.nf -profile test
+nextflow run hmas2.nf -profile test,singularity
 
 latest_testoutput=$(ls -1t test_output* | head -n 1 | sed 's/[,;:]//g')
 

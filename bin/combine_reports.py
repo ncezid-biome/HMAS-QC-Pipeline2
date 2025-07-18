@@ -6,6 +6,7 @@ import os
 import re
 import yaml
 import utilities
+import ast
 
 def make_primer_stats_yaml(output_file, primer_stats, oligos_file):
     '''
@@ -244,29 +245,6 @@ def make_report_yaml(output_file, data_df):
     with open(output_file, 'w') as file:
         yaml.dump(yaml_dict, file, sort_keys=False)
 
-
-def list_files_in_folder(folder_path):
-    """
-    Return a list of all files in the specified folder.
-    """
-    files = []
-    #MF6-3-M3235-23-017_S39_L001_R2_001.fastq.gz will turn into
-    #MF6-3-M3235-23-017
-    #MF6-3-M3235-23-017_S39
-    # pattern = r'_S[0-9]+_L[0-9]+_R.*\.fastq\.gz'
-    pattern = r'_L[0-9]+_R.*\.fastq\.gz'
-
-    #traverse through the specified folder and all its subdirectories
-    for root, _, filenames in os.walk(folder_path):
-        for file in filenames:
-            if os.path.isfile(os.path.join(root, file)):
-                # Extract base name without matched pattern
-                base_name = extract_base_name(file, pattern)
-                if base_name:
-                    files.append(base_name)
-    return files
-
-
 def extract_base_name(file_name, pattern):
     """
     Extracts the base name of the file without the matched pattern.
@@ -284,7 +262,7 @@ def parse_argument():
     parser.add_argument('-y', '--yaml', metavar = '', required = True, help = 'Specify output mqc report file')
     #passed in as a string (space delimited) from command line
     parser.add_argument('-p', '--reports', metavar = '', required = True, help = 'Specify reports')
-    parser.add_argument('-i', '--folder_path', metavar = '', required = True, help = 'Specify folder path for fasta.gz files')
+    parser.add_argument('-i', '--sample_ids', metavar = '', required = True, help = 'Specify a string list of sample IDs, coming from nextflow')
     
     parser.add_argument('-z', '--pyaml', metavar = '', required = True, help = 'Specify output primer_stats mqc report file')
     parser.add_argument('-q', '--primer_stats', metavar = '', required = True, help = 'Specify input primer_stats')  
@@ -303,7 +281,8 @@ if __name__ == "__main__":
     df_list = [pd.read_csv(report, index_col=[0]) for report in args.reports.split()]
         
     report_df = pd.concat(df_list)
-    original_samples = list_files_in_folder(args.folder_path)
+
+    original_samples = ast.literal_eval(args.sample_ids)
     noshow_samples = set(original_samples) - set(report_df.index)
 
     #remove 'undetermined' sample name from our report

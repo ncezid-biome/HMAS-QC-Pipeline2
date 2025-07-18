@@ -8,6 +8,7 @@ process combine_reports {
     path (primer_stats)
     path (read_length)
     path (ch_primer_file)
+    val (sample_ids)
 
     output:
     path ("report*.csv"), emit: csv, optional:true
@@ -18,10 +19,9 @@ process combine_reports {
 
     shell:
     '''
-    #!{reports_file} is passed in as a string (sapce delimited) concatenation of all sample.csv file
-    # Ex.  sample1.csv sample2.csv sample3.csv 
-    # which will then be split by the script to read each csv file
-    combine_reports.py -o "report!{params.file_extension}.csv" -p "!{reports_file}" -i "!{params.reads}" -y report_mqc.yaml \
+    # use inspect() to prepare a stringified representation of a list, and pass that to a python script
+    # in python script, use ast.literal_eval() to safely evaluate a string containing a Python literal (a list in this case)
+    combine_reports.py -o "report!{params.file_extension}.csv" -p "!{reports_file}" -i "!{sample_ids.inspect()}" -y report_mqc.yaml \
                        -q "!{primer_stats}" -z primer_stats_mqc.yaml -l !{ch_primer_file} \
                        -r "!{read_length}" -x read_length_mqc.yaml
 

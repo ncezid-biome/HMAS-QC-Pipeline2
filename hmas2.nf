@@ -99,6 +99,11 @@ workflow {
     paired_reads = paired_reads.filter { pair -> 
     !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
 
+    // a collection of sample names of origial raw reads
+    paired_reads
+        .map { tuple -> tuple[0] }
+        .set { sample_id_ch }
+
     FASTQC_RAW(paired_reads)
  // removed_primer_reads_ch = cutadapt(paired_reads)
     paired_reads.combine(ch_primer_file).set{ ch_for_cutadapt }
@@ -119,7 +124,7 @@ workflow {
     combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
                                          reports_file_ch.primer_stats.collect(), \
                                          reports_file_ch.read_length.collect(), \
-                                         ch_primer_file)
+                                         ch_primer_file, sample_id_ch.collect())
 
     pear_log_ch = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
     qfilter_log_ch = combine_logs_qfilter(filered_reads_ch.log_csv.collect(), Channel.value('qfilter'))
