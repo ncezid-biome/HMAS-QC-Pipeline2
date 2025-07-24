@@ -21,7 +21,7 @@ process multiqc {
     """
     mqc_file_name=\$(basename "$params.final_outdir")
     cp $multiqc_config ${multiqc_config}.bak
-    update_multiqc_config.py ${multiqc_config}.bak '${params.multiqc_header}' $all_versions
+    update_multiqc_config.py ${multiqc_config}.bak '${params.multiqc_header}' $all_versions '${params.primer}'
 
     if [ -n "$multiqc_config" ]; then
         config="--config ${multiqc_config}.bak"

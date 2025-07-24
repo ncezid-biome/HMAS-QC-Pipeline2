@@ -230,8 +230,8 @@ def make_report_yaml(output_file, data_df):
         'id': 'hmas_run_report',
         'section_name': 'HMAS run report',
         'description': "Combined summary statistics for all the samples in the run, "
-            "showing the mean read depth and the number (and percentage) of successful"
-            "primer pairs (out of total 2461 in the Salmonella HMAS primer panel).",
+            "showing the mean read depth and the number (and percentage) of successful "
+            "primer pairs.",
         'plot_type': 'table',
         'pconfig': {
             'id': 'hmas_run_report',

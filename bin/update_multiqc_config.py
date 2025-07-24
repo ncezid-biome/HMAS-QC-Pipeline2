@@ -4,6 +4,7 @@ import yaml
 import sys
 import re
 from collections import defaultdict
+import os
 
 def parse_header_info(header_info_str):
     """Parses the multiqc_header string into a dictionary."""
@@ -37,7 +38,7 @@ def parse_software_version(software_versions):
     return flat_versions
 
 
-def update_multiqc_config(yaml_file, header_info_str, software_versions):
+def update_multiqc_config(yaml_file, header_info_str, software_versions, primer_file):
     """Appends parsed header info and software versions to multiqc_config.yaml while maintaining structure."""
     
     # Parse header_info
@@ -55,6 +56,9 @@ def update_multiqc_config(yaml_file, header_info_str, software_versions):
     for key, value in header_info_dict.items():
         entry = {key: str(value)}
         config["report_header_info"].append(entry)
+    
+    # add the primer / oligo information
+    config["report_header_info"].append({"oligo file": os.path.basename(primer_file)})
 
     # Add the software_versions section (making sure to not have dashes)
     config["software_versions"] = software_version_dict
@@ -68,4 +72,5 @@ if __name__ == "__main__":
     yaml_file = sys.argv[1]  # First argument: path to multiqc_config.yaml
     header_info_str = sys.argv[2]  # Second argument: multiqc_header as a string
     software_versions = sys.argv[3] # 3rd argument: software_version.yaml 
-    update_multiqc_config(yaml_file, header_info_str, software_versions)
+    primer_file = sys.argv[4] # 4th argument: primer file (oligo file)  
+    update_multiqc_config(yaml_file, header_info_str, software_versions, primer_file)
