@@ -28,8 +28,9 @@ Channel
         size: 2
     )
     .map { reads_name, reads_paths ->
-        // Remove _L### from the sample name
-        def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '')
+        // Remove _L### from the sample name, and force string interpretation
+        def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '').toString()
+
 
         // If this name has been seen before, increment counter and append suffix
         def count = name_counts.get(cleaned_name, 0) + 1
