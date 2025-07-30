@@ -37,7 +37,8 @@ Channel
         name_counts[cleaned_name] = count
 
         // Append suffix only if it's a duplicate (i.e., count > 1)
-        def final_name = (count > 1) ? "${cleaned_name}_${count}" : cleaned_name
+        //def final_name = (count > 1) ? "${cleaned_name}_${count}" : cleaned_name
+        def final_name = (count > 1) ? "${cleaned_name}_${count}".toString() : cleaned_name.toString()
 
         // List to hold the updated paths
         def updated_paths = []
