@@ -17,9 +17,15 @@ if [[ ! -s "$input_fasta" ]]; then
     exit 0
 fi
 
-# Temp directory (auto cleanup)
-tmpdir=$(mktemp -d)
-trap "rm -rf $tmpdir" EXIT
+# Create temp dir inside current working dir (Nextflow task's work dir)
+tmpdir=$(mktemp -d tmp.XXXXXXXXXX)
+
+# Auto-cleanup when the process ends
+trap "rm -rf '$tmpdir'" EXIT
+
+
+# Cleanup on exit
+trap "rm -rf '$tmpdir'" EXIT
 
 concat_file="$tmpdir/concat.fasta"
 > "$concat_file"   # truncate/init
