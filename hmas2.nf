@@ -113,7 +113,11 @@ workflow {
     merged_reads_ch = pair_merging(removed_primer_reads_ch.cutadapt_fastq)
     filered_reads_ch = quality_filtering(merged_reads_ch.fastq)
     unique_reads_ch = dereplication(filered_reads_ch.fasta)
-    denoisded_reads_ch = denoising(unique_reads_ch.fasta)
+
+    unique_reads_ch.fasta.combine(ch_primer_file).set{ ch_for_denoising }
+    denoisded_reads_ch = denoising(ch_for_denoising)
+
+
     // hashing(denoisded_reads_ch.unique)
     before_search_ch = filered_reads_ch.fasta.join(denoisded_reads_ch.unique)
     match_file_ch = search_exact(before_search_ch)

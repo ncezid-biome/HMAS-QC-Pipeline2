@@ -52,11 +52,11 @@ process dereplication {
 process denoising {
     publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "*.fasta"
     tag "${sample}"
-    debug true
+    // debug true
     cpus = "${params.mincpus}"
 
     input:
-    tuple val(sample), path (fasta)
+    tuple val(sample), path (fasta), path(ch_primer_file)
 
     output:
     tuple val(sample), path ("${sample}.final.unique.fasta"), emit:unique, optional:true
@@ -64,13 +64,13 @@ process denoising {
 
     shell:
     '''
-    vsearch --cluster_unoise !{fasta} --minsize !{params.denoising_minsize} \
-                                      --unoise_alpha !{params.denoising_alpha} \
-                                      --centroids !{sample}.unique.unoise.fasta \
-                                      --sizein --sizeout
+    run_cluster_unoise.sh !{fasta} !{ch_primer_file} !{sample}.unique.unoise.fasta \
+                            !{params.denoising_minsize} !{params.denoising_alpha}
     
     #remove potential chimeras
-    vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
+    if [  -s "!{sample}.unique.unoise.fasta" ]; then
+        vsearch --uchime3_denovo !{sample}.unique.unoise.fasta --nonchimeras !{sample}.final.unique.fasta
+    fi
 
     #generate denoise_log.csv file
     # Check if the fasta file exists and is not empty

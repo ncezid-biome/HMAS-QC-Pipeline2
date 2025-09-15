@@ -1,6 +1,9 @@
 process multiqc {
     publishDir "${params.final_outdir}", mode: 'copy'
     tag "multiqc"
+    container 'https://depot.galaxyproject.org/singularity/multiqc%3A1.31--pyhdfd78af_0'
+    maxRetries 2
+
 
     input:
     path ('*')

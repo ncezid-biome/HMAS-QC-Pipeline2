@@ -18,6 +18,7 @@ process pair_merging {
     if [ -s !{reads1} ] && [ -s !{reads2} ]; then
         pear -f !{reads1} -r !{reads2} -o !{sample} -q !{params.merging_minquality} \
                                                 -m !{params.merging_maxlength} \
+                                                -n !{params.merging_minlength} \
                                                 -v !{params.merging_minoverlap} -j !{{params.medcpus}} \
                                                 > !{sample}_pear.log
         mv !{sample}.assembled.fastq !{sample}.fastq
