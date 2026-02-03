@@ -17,6 +17,8 @@ By default, the pipeline runs the following [workflow](#workflow):
 - Reporting (custom scripts)
 - Aggregate reports ([multqic](https://multiqc.info/))  
 - Output: high quality unique representative sequence file (fasta format), and a plain text file report. Additionally, there is a combined report (csv format) summarizing the data from all samples and a MultiQC report (html format) aggregating data from all the modules. ([**MultiQC report description**](MultiQC_report_text_description.pdf))   
+- **QC metrics**: Two quality control thresholds were applied: a mean read depth of ≥30× per amplicon and a ≥90% primer success rate. Detailed definitions and rationale of these QC criteria are provided in the accompanying documentation. ([**QC metrics description**](test_data/ROC/QC.md))  
+
 <p align="center"><img src="HMAS_MultiQC_REPORT.png" alt="HMAS-QC-Pipeline2" width="750"></p>
 
 ## Installation  
