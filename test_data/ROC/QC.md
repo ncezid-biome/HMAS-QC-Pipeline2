@@ -53,5 +53,5 @@ Accordingly, the recommended depth of ~33× should be interpreted as a **referen
 
 - In addition to depth-based threshold, a **90% primer success threshold** was applied as a quality control criterion.  
 - This threshold was empirically derived through evaluation across multiple independent datasets and was selected to ensure robust locus recovery and analytical consistency in highly multiplexed amplicon sequencing experiments.  
-- The chosen cutoff is deliberately more stringent than the **85% locus reporting threshold** commonly used in PulseNet core genome MLST (cgMLST) analyses, reflecting the increased sensitivity required for primer-level performance assessment.  
+- The chosen cutoff is deliberately more stringent than the **85% locus reporting threshold** commonly used in PulseNet core genome MLST (cgMLST) analyses.  
 - Adoption of this higher threshold improves confidence in downstream comparative and phylogenetic analyses while maintaining compatibility with established public health surveillance standards [Leeper, Molly M et al. “Validation of Core and Whole-Genome Multi-Locus Sequence Typing Schemes for Shiga-Toxin-Producing E. coli (STEC) Outbreak Detection in a National Surveillance Network, PulseNet 2.0, USA.” Microorganisms vol. 13,6 1310. 4 Jun. 2025, doi:10.3390/microorganisms13061310].
