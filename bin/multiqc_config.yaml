@@ -122,20 +122,22 @@ table_cond_formatting_colours:
   - fail: "#d9534f"
 
 report_section_order:
-  hmas_run_report:
+  genus_primer_matrix:
     order: 10
-  read_length_report:
+  hmas_run_report:
     order: 20
-  primer_report:
+  read_length_report:
     order: 30
-  denoise:
+  primer_report:
     order: 40
-  dereplication:
+  denoise:
     order: 50
-  qfilter:
+  dereplication:
     order: 60
-  pear:
+  qfilter:
     order: 70
+  pear:
+    order: 80
   cli-html:
     order: -1
 

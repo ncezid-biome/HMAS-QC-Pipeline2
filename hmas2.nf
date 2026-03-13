@@ -181,6 +181,7 @@ workflow {
         .combine(derep_log_ch)
         .combine(denoise_log_ch)
         .combine(combined_report_ch.primer_stats_mqc)
+        .combine(combined_report_ch.genus_primer_stats_mqc)
         .combine(combined_report_ch.read_length_mqc)
         .combine(make_command_yaml_ch.CLI)
         .combine(combined_report_ch.report_mqc), ch_config_for_multiqc, collected_versions)
