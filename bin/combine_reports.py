@@ -8,6 +8,100 @@ import yaml
 import utilities
 import ast
 
+
+def make_genus_primer_matrix_yaml(output_file, primer_stats, keyword="typhi"):
+    """
+    Generate a MultiQC YAML table showing read counts for primers
+    containing a specific keyword across all samples.
+
+    Output table format:
+
+                primerA   primerB   primerC
+    sample_1       10        20        30
+    sample_2       20        30        40
+
+    Parameters
+    ----------
+    output_file : str
+        Output YAML file name
+
+    primer_stats : str
+        Space-separated list of per-sample primer stats CSV files
+
+    keyword : str
+        Keyword used to filter primers (e.g. "typhi")
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame containing the sample × primer matrix
+    """
+
+    # -----------------------------
+    # Build combined dataframe
+    # -----------------------------
+    df_list = [
+        pd.read_csv(report, index_col=0, sep="\t")
+        for report in primer_stats.split()
+    ]
+
+    combined_df = pd.concat(df_list)
+
+    # -----------------------------
+    # Filter primers by keyword
+    # -----------------------------
+    subset_cols = [
+        col for col in combined_df.columns
+        if keyword.lower() in col.lower()
+    ]
+
+    subset_df = combined_df[subset_cols].fillna(0)
+
+    # -----------------------------
+    # Build MultiQC headers
+    # -----------------------------
+    headers = {
+        col: {
+            "title": col,
+            "description": f"Read count for primer {col}",
+            "format": "{:,.0f}",
+        }
+        for col in subset_df.columns
+    }
+
+    # -----------------------------
+    # Convert dataframe to YAML format
+    # -----------------------------
+    data_yaml = subset_df.to_dict(orient="index")
+
+    # MultiQC YAML dictionary
+    yaml_dict = {
+        "id": f"genus_primer_matrix",
+        "section_name": f"Genus Primer Read Count Report",
+        "description": f"Read counts per Salmonella genus-specific primer pair per sample.",
+        "plot_type": "table",
+        "pconfig": {
+            "id": f"genus_primer_matrix",
+            "sort_rows": False,
+            "col1_header": "Sample",
+            "no_violin": True,
+        },
+        "headers": headers,
+        "data": data_yaml
+    }
+
+    # -----------------------------
+    # Write YAML file
+    # -----------------------------
+    with open(output_file, "w") as file:
+        yaml.dump(yaml_dict, file, sort_keys=False)
+
+    # -----------------------------
+    # Return dataframe for reuse
+    # -----------------------------
+    return subset_df
+
+
 def make_primer_stats_yaml(output_file, primer_stats, oligos_file):
     '''
     this method generates a custom content yaml file specific for the multiqc report
@@ -270,6 +364,8 @@ def parse_argument():
 
     parser.add_argument('-x', '--lyaml', metavar = '', required = True, help = 'Specify output read_length mqc report file')
     parser.add_argument('-r', '--read_length', metavar = '', required = True, help = 'Specify input read_length file')  
+    parser.add_argument('-g', '--gyaml', metavar = '', required = True, help = 'Specify output genus primer_stats mqc report file')
+    parser.add_argument('-c', '--gcsv', metavar = '', required = True, help = 'Specify genus primer stats output file')
 
     return parser.parse_args()
 
@@ -305,3 +401,7 @@ if __name__ == "__main__":
     make_report_yaml(args.yaml, report_df)
     make_primer_stats_yaml(args.pyaml, args.primer_stats, args.primers)
     make_read_length_yaml(args.lyaml, args.read_length, noshow_samples)
+    # generate 9 genus marker primers report
+    genus_primer_df = make_genus_primer_matrix_yaml(args.gyaml, args.primer_stats, 'typhi')
+    if genus_primer_df is not None and not genus_primer_df.empty:
+        genus_primer_df.to_csv(f"{args.gcsv}")

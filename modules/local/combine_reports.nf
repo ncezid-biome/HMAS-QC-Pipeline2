@@ -16,6 +16,8 @@ process combine_reports {
     path ("primer_stats_mqc.yaml"), emit: primer_stats_mqc, optional:true
     path ("read_length_mqc.yaml"), emit: read_length_mqc, optional:true
     path ("versions.yml"), emit: versions, optional: true
+    path ("genus_primer_stats_mqc.yaml"), emit: genus_primer_stats_mqc, optional:true
+    path ("genus_primer_stats.csv"), emit: genus_primer_stats_csv, optional:true
 
     shell:
     '''
@@ -23,7 +25,8 @@ process combine_reports {
     # in python script, use ast.literal_eval() to safely evaluate a string containing a Python literal (a list in this case)
     combine_reports.py -o "report!{params.file_extension}.csv" -p "!{reports_file}" -i "!{sample_ids.inspect()}" -y report_mqc.yaml \
                        -q "!{primer_stats}" -z primer_stats_mqc.yaml -l !{ch_primer_file} \
-                       -r "!{read_length}" -x read_length_mqc.yaml
+                       -r "!{read_length}" -x read_length_mqc.yaml \
+                       -g genus_primer_stats_mqc.yaml -c genus_primer_stats.csv
 
     echo "!{task.process}:" > versions.yml
     echo "  python: $(python --version 2>&1 | awk '{print $2}')" >> versions.yml
