@@ -9,6 +9,9 @@ def logMessage(msg) {
     }
 }
 
+// AJW: suggest creating in silico control sample to be processed along with real samples each time pipeline runs.
+// Purpose is to have reads that should be removed at each step that can be confirmed as part of test.
+// Final high quality reads must exactly match expected.
 
 // Define the timestamp
 def timestamp = new Date().format("yyyyMMdd_HHmmss")
