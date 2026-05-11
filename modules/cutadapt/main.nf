@@ -1,11 +1,11 @@
 process cutadapt {
-    publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "*.fastq"
+    publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "cutadapt/*.json"
+    publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "cutadapt/*.fastq", enabled: params.save_trimmed
     tag "${sample}"
     cpus = "${params.maxcpus}"
     memory = "${params.medmems}"
     errorStrategy 'retry'
     maxRetries 3
-    // debug true
 
     maxForks = "${params.maxcutadapts}"
 
@@ -23,7 +23,5 @@ process cutadapt {
                     -o cutadapt -s !{sample} -p !{ch_primer_file} \
                     -e !{params.cutadapt_maxerror} -l !{params.cutadapt_minlength} \
                     -t !{params.cutadapt_thread} -b !{params.cutadapt_long}
-
     '''
-
 }
