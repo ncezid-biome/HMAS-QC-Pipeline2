@@ -4,25 +4,23 @@ Bin FASTQ records by adapter name found in the read header.
 
 Pass 1: Scan headers only to build a dict mapping read_id -> adapter,
         independently for R1 and R2. Performs concordance checks.
-Pass 2: For each adapter, stream through the input file once and write
-        only matching records to the corresponding output file.
-        Only 2 file handles are open at any time (input + current output).
+Pass 2: Read each file once into memory, bin records by adapter in memory,
+        then write each adapter's records sequentially with only 2 file
+        handles open at a time (never more than one output file at once).
 
 Usage:
     python bin_fastq_by_adapter.py -r1 R1.fastq -r2 R2.fastq -o OUTPUT_DIR
-
-Example output structure:
-    OUTPUT_DIR/
-        SAMPLE.matched.1.ADAPTER.fastq
-        SAMPLE.matched.2.ADAPTER.fastq
-        ...
 """
 
-import os
 import re
 import sys
 import argparse
 from pathlib import Path
+from collections import defaultdict
+
+
+# Compile once at module level
+ADAPTER_RE = re.compile(r'adapter=([^=\s]+)=')
 
 
 def parse_args():
@@ -39,59 +37,39 @@ def parse_args():
 
 
 def extract_adapter(header):
-    """
-    Parse the adapter name from a FASTQ header line.
-    Expects a field matching: adapter=<adapterName>=<sampleName>
-    Returns the adapter name (e.g. OG0001706primerGroup0), or None if not found.
-    """
-    m = re.search(r'adapter=([^=\s]+)=', header)
+    m = ADAPTER_RE.search(header)
     return m.group(1) if m else None
 
 
 def extract_read_id(header):
-    """
-    Extract the read ID (everything up to the first space) from a header line.
-    e.g. '@SH00399:3:BWR97821...' -> 'SH00399:3:BWR97821...'
-    """
     return header.lstrip('@').split()[0]
 
 
 def pass1_build_index(filepath):
     """
     First pass: scan headers only, building a dict of read_id -> adapter.
-    Also collects the full set of adapter names seen.
-    Returns (read_index, adapters) where:
-        read_index: dict {read_id: adapter_name}
-        adapters:   set of all adapter names seen
+    Reads entire file at once to minimize network filesystem round trips.
+    Returns (read_index, adapters).
     """
     read_index = {}
     adapters = set()
 
-    with open(filepath, 'r') as fh:
-        while True:
-            header = fh.readline().rstrip('\n')
-            if not header:
-                break
-            if not header.startswith('@'):
-                print(f"WARNING: Unexpected header line: {header}", file=sys.stderr)
-                for _ in range(3):
-                    fh.readline()
-                continue
+    with open(filepath, 'r', buffering=8*1024*1024) as fh:
+        content = fh.read()
 
-            for _ in range(3):
-                fh.readline()
-
-            read_id = extract_read_id(header)
-            adapter = extract_adapter(header)
-            if adapter is None:
-                print(
-                    f"WARNING: Could not parse adapter from header: {header}",
-                    file=sys.stderr
-                )
-                adapter = "unknown"
-
-            read_index[read_id] = adapter
-            adapters.add(adapter)
+    lines = content.splitlines()
+    for i in range(0, len(lines), 4):
+        if i >= len(lines) or not lines[i].startswith('@'):
+            continue
+        header = lines[i]
+        read_id = extract_read_id(header)
+        adapter = extract_adapter(header)
+        if adapter is None:
+            print(f"WARNING: Could not parse adapter from header: {header}",
+                  file=sys.stderr)
+            adapter = "unknown"
+        read_index[read_id] = adapter
+        adapters.add(adapter)
 
     return read_index, adapters
 
@@ -99,8 +77,8 @@ def pass1_build_index(filepath):
 def check_concordance(r1_index, r1_adapters, r2_index, r2_adapters):
     """
     Check R1 and R2 for concordance of adapter sets, read IDs,
-    and adapter assignments for shared read IDs. Returns the union
-    of adapter names across both files.
+    and adapter assignments for shared read IDs.
+    Returns the union of adapter names across both files.
     """
     adapters = r1_adapters | r2_adapters
 
@@ -122,71 +100,60 @@ def check_concordance(r1_index, r1_adapters, r2_index, r2_adapters):
         only_r1_ids = r1_ids - r2_ids
         only_r2_ids = r2_ids - r1_ids
         if only_r1_ids:
-            print(
-                f"  WARNING: {len(only_r1_ids):,} read ID(s) in R1 not found in R2. "
-                f"First 5: {list(only_r1_ids)[:5]}",
-                file=sys.stderr
-            )
+            print(f"  WARNING: {len(only_r1_ids):,} read ID(s) in R1 not found in R2. "
+                  f"First 5: {list(only_r1_ids)[:5]}", file=sys.stderr)
         if only_r2_ids:
-            print(
-                f"  WARNING: {len(only_r2_ids):,} read ID(s) in R2 not found in R1. "
-                f"First 5: {list(only_r2_ids)[:5]}",
-                file=sys.stderr
-            )
+            print(f"  WARNING: {len(only_r2_ids):,} read ID(s) in R2 not found in R1. "
+                  f"First 5: {list(only_r2_ids)[:5]}", file=sys.stderr)
 
     shared_ids = r1_ids & r2_ids
-    mismatched = {
-        rid for rid in shared_ids
-        if r1_index[rid] != r2_index[rid]
-    }
+    mismatched = {rid for rid in shared_ids if r1_index[rid] != r2_index[rid]}
     if mismatched:
-        print(
-            f"  WARNING: {len(mismatched):,} read ID(s) have different adapter "
-            f"assignments in R1 vs R2. First 5:",
-            file=sys.stderr
-        )
+        print(f"  WARNING: {len(mismatched):,} read ID(s) have different adapter "
+              f"assignments in R1 vs R2. First 5:", file=sys.stderr)
         for rid in list(mismatched)[:5]:
-            print(
-                f"    {rid}: R1={r1_index[rid]}, R2={r2_index[rid]}",
-                file=sys.stderr
-            )
+            print(f"    {rid}: R1={r1_index[rid]}, R2={r2_index[rid]}",
+                  file=sys.stderr)
     else:
         print("  Adapter assignments are consistent for all shared read IDs.")
 
     return adapters
 
 
-def pass2_write_by_adapter(filepath, read_index, adapters, out_dir, base, read_num):
+def pass2_bin_and_write(filepath, read_index, adapters, out_dir, base, read_num):
     """
-    Second pass: for each adapter, stream through the input file once,
-    writing only records that match that adapter to its output file.
-    Only 2 file handles are open at any time.
-
+    Second pass: read entire file into memory once, bin records by adapter,
+    then write each adapter's records to its output file sequentially.
+    Only one output file handle is open at a time.
     Returns a dict of {adapter: record_count}.
     """
-    counts = {adapter: 0 for adapter in adapters}
+    # Read entire file in one call
+    with open(filepath, 'r', buffering=8*1024*1024) as fh:
+        content = fh.read()
 
+    lines = content.splitlines()
+
+    # Bin records in memory: {adapter: [list of joined record strings]}
+    bins = defaultdict(list)
+    for i in range(0, len(lines) - 3, 4):
+        if not lines[i].startswith('@'):
+            print(f"WARNING: Unexpected header line: {lines[i]}", file=sys.stderr)
+            continue
+        header = lines[i]
+        record_str = header + "\n" + lines[i+1] + "\n" + lines[i+2] + "\n" + lines[i+3]
+        read_id = extract_read_id(header)
+        adapter = read_index.get(read_id, "unknown")
+        bins[adapter].append(record_str)
+
+    # Write each adapter's records sequentially, one file at a time
+    counts = {}
     for adapter in sorted(adapters):
         out_path = out_dir / (base + "." + str(read_num) + "." + adapter + ".fastq")
-        with open(filepath, 'r') as in_fh, open(out_path, 'w') as out_fh:
-            while True:
-                header = in_fh.readline().rstrip('\n')
-                seq    = in_fh.readline().rstrip('\n')
-                plus   = in_fh.readline().rstrip('\n')
-                qual   = in_fh.readline().rstrip('\n')
-
-                if not header:
-                    break
-                if not header.startswith('@'):
-                    print(f"WARNING: Unexpected header line: {header}", file=sys.stderr)
-                    continue
-
-                read_id = extract_read_id(header)
-                record_adapter = read_index.get(read_id, "unknown")
-
-                if record_adapter == adapter:
-                    out_fh.write(header + "\n" + seq + "\n" + plus + "\n" + qual + "\n")
-                    counts[adapter] += 1
+        records = bins.get(adapter, [])
+        with open(out_path, 'w', buffering=8*1024*1024) as fh:
+            if records:
+                fh.write('\n'.join(records) + '\n')
+        counts[adapter] = len(records)
 
     return counts
 
@@ -223,12 +190,12 @@ def main():
 
     adapters = check_concordance(r1_index, r1_adapters, r2_index, r2_adapters)
 
-    # Pass 2: stream input once per adapter, write matching records only
-    print(f"  Pass 2: writing R1 records ({len(adapters)} adapters) ...")
-    r1_counts = pass2_write_by_adapter(r1_path, r1_index, adapters, out_dir, base, 1)
+    # Pass 2: bin into memory and write sequentially
+    print(f"  Pass 2: binning and writing R1 records ({len(adapters)} adapters) ...")
+    r1_counts = pass2_bin_and_write(r1_path, r1_index, adapters, out_dir, base, 1)
 
-    print(f"  Pass 2: writing R2 records ({len(adapters)} adapters) ...")
-    r2_counts = pass2_write_by_adapter(r2_path, r2_index, adapters, out_dir, base, 2)
+    print(f"  Pass 2: binning and writing R2 records ({len(adapters)} adapters) ...")
+    r2_counts = pass2_bin_and_write(r2_path, r2_index, adapters, out_dir, base, 2)
 
     print("  Results:")
     for adapter in sorted(adapters):

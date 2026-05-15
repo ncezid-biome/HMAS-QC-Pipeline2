@@ -6,6 +6,8 @@ process split_by_adapter {
     errorStrategy 'retry'
     maxRetries 3
 
+    maxForks = "${params.maxcutadapts}"
+
     when:
     params.split_by_adapter
 
