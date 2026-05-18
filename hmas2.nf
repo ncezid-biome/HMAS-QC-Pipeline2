@@ -9,6 +9,9 @@ def logMessage(msg) {
     }
 }
 
+// AJW: suggest creating in silico control sample to be processed along with real samples each time pipeline runs.
+// Purpose is to have reads that should be removed at each step that can be confirmed as part of test.
+// Final high quality reads must exactly match expected.
 
 // Define the timestamp
 def timestamp = new Date().format("yyyyMMdd_HHmmss")
@@ -89,6 +92,7 @@ include { combine_logs as combine_logs_pear } from './modules/local/combine_logs
 include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf' 
 include { combine_logs as combine_logs_derep } from './modules/local/combine_logs.nf' 
 include { combine_logs as combine_logs_denoise } from './modules/local/combine_logs.nf' 
+include { split_by_adapter } from './modules/local/split_by_adapter.nf'
 include { make_count_table } from './modules/local/make_count_table.nf' 
 include { multiqc } from './modules/multiqc/main.nf' 
 
@@ -110,6 +114,7 @@ workflow {
  // removed_primer_reads_ch = cutadapt(paired_reads)
     paired_reads.combine(ch_primer_file).set{ ch_for_cutadapt }
     removed_primer_reads_ch = cutadapt(ch_for_cutadapt)
+    split_by_adapter(removed_primer_reads_ch.cutadapt_fastq)    
     merged_reads_ch = pair_merging(removed_primer_reads_ch.cutadapt_fastq)
     filered_reads_ch = quality_filtering(merged_reads_ch.fastq)
     unique_reads_ch = dereplication(filered_reads_ch.fasta)
