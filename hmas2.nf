@@ -1,101 +1,18 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// LOGGING cofig
-def logMessage(msg) {
+// LOGGING config
+def logMessage(String msg) {
     def LOG_FILE = "step_mothur_pipeline.log"
     new File("${LOG_FILE}").withWriterAppend { writer ->
         writer.println("[${new Date()}] $msg")
     }
 }
 
-// AJW: suggest creating in silico control sample to be processed along with real samples each time pipeline runs.
-// Purpose is to have reads that should be removed at each step that can be confirmed as part of test.
-// Final high quality reads must exactly match expected.
-
-// Define the timestamp
-def timestamp = new Date().format("yyyyMMdd_HHmmss")
-
-// Define the output directory with the version and timestamp at runtime
-params.final_outdir = params.outdir ? "${params.outdir.replaceAll('/+$', '')}_v${params.pipeline_version}_${timestamp}" : "hmas2_results_v${params.pipeline_version}_${timestamp}"
-params.file_extension = "_v${params.pipeline_version}_${timestamp}"
-
-// Track occurrences of read names
-// updated to guard against name collision in FASTQ files. In case of duplicate name
-// FASTQ files, they'll be appended with _2, _3 etc. (updated on disk as well)
-def name_counts = [:]
-Channel
-    // search for pair-end raw reads files in the given folder or any subfolders
-    .fromFilePairs(
-        ["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"],
-        size: 2
-    )
-    .map { reads_name, reads_paths ->
-        // Remove _L### from the sample name, and force string interpretation
-        def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '').toString()
-
-        // If this name has been seen before, increment counter and append suffix
-        def count = name_counts.get(cleaned_name, 0) + 1
-        name_counts[cleaned_name] = count
-
-        // Append suffix only if it's a duplicate (i.e., count > 1)
-        def final_name = (count > 1) ? "${cleaned_name}_${count}".toString() : cleaned_name.toString()
-
-        // List to hold the updated paths
-        def updated_paths = []
-
-        if (count > 1) {
-            reads_paths.each { path ->
-                def base_name = path.getName()
-                def suffix = count
-                def new_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${suffix}")
-                def new_path = path.getParent().resolve(new_name)
-
-                // Keep incrementing suffix if file already exists
-                // Replaced while loop (no longer supported in Nextflow 26.x)
-                // with a bounded Groovy range search
-                def resolved = (suffix..suffix+999).findResult { s ->
-                    def candidate_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${s}")
-                    def candidate_path = path.getParent().resolve(candidate_name)
-                    if (!candidate_path.exists()) {
-                        name_counts[cleaned_name] = s
-                        candidate_path
-                    } else {
-                        null
-                    }
-                }
-
-                if (resolved == null) {
-                    error "Could not resolve unique filename for ${base_name} after 1000 attempts"
-                }
-
-                new_path = resolved
-                new_name = new_path.getName()
-
-                // Rename the file
-                path.renameTo(new_path)
-                println "Renamed: ${path} to ${new_path}"
-                updated_paths << new_path
-            }
-        } else {
-            updated_paths = reads_paths
-        }
-
-        // Return the final name and the updated paths (either renamed or original)
-        tuple(final_name, updated_paths)
-    }
-    .set { paired_reads }
-
-Channel.fromPath(params.multiqc_config, checkIfExists: true).set { ch_config_for_multiqc }
-Channel.fromPath(params.custom_logo, checkIfExists: true).set { ch_logo_for_multiqc }
-Channel.fromPath(params.primer, checkIfExists: true).set { ch_primer_file }
-
-
 include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
 include { cutadapt } from './modules/cutadapt/main.nf' 
 include { pair_merging } from './modules/pair_merging/main.nf' 
 include { quality_filtering; dereplication; denoising; search_exact } from './modules/vsearch/main.nf'
-// include { hashing } from './modules/local/hash' 
 include { combine_reports } from './modules/local/combine_reports.nf'
 include { combine_logs as combine_logs_pear } from './modules/local/combine_logs.nf'
 include { combine_logs as combine_logs_qfilter } from './modules/local/combine_logs.nf' 
@@ -106,24 +23,94 @@ include { make_count_table } from './modules/local/make_count_table.nf'
 include { multiqc } from './modules/multiqc/main.nf' 
 
 workflow {
+
     logMessage("step_mothur started")
     logMessage("processing reads from: ${params.reads}")
     logMessage("will save results into: ${params.final_outdir}")
-    
+
+    // Track occurrences of read names
+    // updated to guard against name collision in FASTQ files. In case of duplicate name
+    // FASTQ files, they'll be appended with _2, _3 etc. (updated on disk as well)
+    def name_counts = [:]
+    def paired_reads = Channel
+        // search for pair-end raw reads files in the given folder or any subfolders
+        .fromFilePairs(
+            ["${params.reads}/*_R{1,2}*.fastq.gz", "${params.reads}/**/*_R{1,2}*.fastq.gz"],
+            size: 2
+        )
+        .map { reads_name, reads_paths ->
+            // Remove _L### from the sample name, and force string interpretation
+            def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '').toString()
+
+            // If this name has been seen before, increment counter and append suffix
+            def count = name_counts.get(cleaned_name, 0) + 1
+            name_counts[cleaned_name] = count
+
+            // Append suffix only if it's a duplicate (i.e., count > 1)
+            def final_name = (count > 1) ? "${cleaned_name}_${count}".toString() : cleaned_name.toString()
+
+            // List to hold the updated paths
+            def updated_paths = []
+
+            if (count > 1) {
+                reads_paths.each { path ->
+                    def base_name = path.getName()
+                    def suffix = count
+                    def new_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${suffix}")
+                    def new_path = path.getParent().resolve(new_name)
+
+                    // Keep incrementing suffix if file already exists
+                    // Replaced while loop (no longer supported in Nextflow 26.x)
+                    // with a bounded Groovy range search
+                    def resolved = (suffix..suffix+999).findResult { s ->
+                        def candidate_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${s}")
+                        def candidate_path = path.getParent().resolve(candidate_name)
+                        if (!candidate_path.exists()) {
+                            name_counts[cleaned_name] = s
+                            candidate_path
+                        } else {
+                            null
+                        }
+                    }
+
+                    if (resolved == null) {
+                        error "Could not resolve unique filename for ${base_name} after 1000 attempts"
+                    }
+
+                    new_path = resolved
+                    new_name = new_path.getName()
+
+                    // Rename the file
+                    path.renameTo(new_path)
+                    println "Renamed: ${path} to ${new_path}"
+                    updated_paths << new_path
+                }
+            } else {
+                updated_paths = reads_paths
+            }
+
+            // Return the final name and the updated paths (either renamed or original)
+            tuple(final_name, updated_paths)
+        }
+
+    def ch_config_for_multiqc = Channel.fromPath(params.multiqc_config, checkIfExists: true)
+    def ch_logo_for_multiqc   = Channel.fromPath(params.custom_logo, checkIfExists: true)
+    def ch_primer_file        = Channel.fromPath(params.primer, checkIfExists: true)
+
     // Filter out file pairs containing "Undetermined"
     paired_reads = paired_reads.filter { pair -> 
-    !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")}
+        !new File(pair[0]).getName().toLowerCase().startsWith("undetermined")
+    }
 
-    // a collection of sample names of origial raw reads
+    // a collection of sample names of original raw reads
     paired_reads
         .map { tuple -> tuple[0] }
         .set { sample_id_ch }
 
     FASTQC_RAW(paired_reads)
- // removed_primer_reads_ch = cutadapt(paired_reads)
     paired_reads.combine(ch_primer_file).set{ ch_for_cutadapt }
     removed_primer_reads_ch = cutadapt(ch_for_cutadapt)
-    split_by_adapter(removed_primer_reads_ch.cutadapt_fastq)    
+    split_by_adapter(removed_primer_reads_ch.cutadapt_fastq)
     merged_reads_ch = pair_merging(removed_primer_reads_ch.cutadapt_fastq)
     filered_reads_ch = quality_filtering(merged_reads_ch.fastq)
     unique_reads_ch = dereplication(filered_reads_ch.fasta)
@@ -131,30 +118,25 @@ workflow {
     unique_reads_ch.fasta.combine(ch_primer_file).set{ ch_for_denoising }
     denoisded_reads_ch = denoising(ch_for_denoising)
 
-
-    // hashing(denoisded_reads_ch.unique)
     before_search_ch = filered_reads_ch.fasta.join(denoisded_reads_ch.unique)
     match_file_ch = search_exact(before_search_ch)
-    // collectFile will instead concatenate all the file contents and write it into a single file
-    // which is not what we want.  We want to read each file separately, for all the files
     before_count_table_ch = match_file_ch.join(denoisded_reads_ch.unique)
     before_count_table_ch.combine(ch_primer_file).set{ ch_for_make_count_table }
     reports_file_ch = make_count_table(ch_for_make_count_table)
-    // reports_file_ch = make_count_table(before_count_table_ch)
     combined_report_ch = combine_reports(reports_file_ch.report.collect(), \
                                          reports_file_ch.primer_stats.collect(), \
                                          reports_file_ch.read_length.collect(), \
                                          ch_primer_file, sample_id_ch.collect())
 
-    pear_log_ch = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
+    pear_log_ch    = combine_logs_pear(merged_reads_ch.log_csv.collect(), Channel.value('pear'))
     qfilter_log_ch = combine_logs_qfilter(filered_reads_ch.log_csv.collect(), Channel.value('qfilter'))
-    derep_log_ch = combine_logs_derep(unique_reads_ch.log_csv.collect(), Channel.value('dereplication'))
+    derep_log_ch   = combine_logs_derep(unique_reads_ch.log_csv.collect(), Channel.value('dereplication'))
     denoise_log_ch = combine_logs_denoise(denoisded_reads_ch.log_csv.collect(), Channel.value('denoise'))
 
     process make_command_yaml {
 
         output:
-        path "cli_mqc.txt" , optional:true, emit: CLI
+        path "cli_mqc.txt", optional: true, emit: CLI
 
         script:
         """
@@ -163,7 +145,6 @@ workflow {
             --params_str "--reads ${params.reads} --primer ${params.primer}" \
             --output cli_mqc.txt
         """
-
     }
     make_command_yaml_ch = make_command_yaml()
 
@@ -176,8 +157,7 @@ workflow {
 
     collected_versions = all_versions
         .collectFile(name: 'software_versions.yml')
-        .ifEmpty([]) // returns an empty list if nothing is collected
-
+        .ifEmpty([])
 
     // add fastqc and cutadapt log files (these are existing modules in MultiQC)
     Channel.empty()
