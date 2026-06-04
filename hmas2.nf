@@ -21,7 +21,7 @@ params.final_outdir = params.outdir ? "${params.outdir.replaceAll('/+$', '')}_v$
 params.file_extension = "_v${params.pipeline_version}_${timestamp}"
 
 // Track occurrences of read names
-// updated to guard against name collision in FASTQ files. In case of dupplicate name
+// updated to guard against name collision in FASTQ files. In case of duplicate name
 // FASTQ files, they'll be appended with _2, _3 etc. (updated on disk as well)
 def name_counts = [:]
 Channel
@@ -34,13 +34,11 @@ Channel
         // Remove _L### from the sample name, and force string interpretation
         def cleaned_name = reads_name.replaceAll(/_L[0-9]+/, '').toString()
 
-
         // If this name has been seen before, increment counter and append suffix
         def count = name_counts.get(cleaned_name, 0) + 1
         name_counts[cleaned_name] = count
 
         // Append suffix only if it's a duplicate (i.e., count > 1)
-        //def final_name = (count > 1) ? "${cleaned_name}_${count}" : cleaned_name
         def final_name = (count > 1) ? "${cleaned_name}_${count}".toString() : cleaned_name.toString()
 
         // List to hold the updated paths
@@ -54,14 +52,25 @@ Channel
                 def new_path = path.getParent().resolve(new_name)
 
                 // Keep incrementing suffix if file already exists
-                while (new_path.exists()) {
-                    suffix += 1
-                    new_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${suffix}")
-                    new_path = path.getParent().resolve(new_name)
+                // Replaced while loop (no longer supported in Nextflow 26.x)
+                // with a bounded Groovy range search
+                def resolved = (suffix..suffix+999).findResult { s ->
+                    def candidate_name = base_name.replaceAll(cleaned_name, "${cleaned_name}_${s}")
+                    def candidate_path = path.getParent().resolve(candidate_name)
+                    if (!candidate_path.exists()) {
+                        name_counts[cleaned_name] = s
+                        candidate_path
+                    } else {
+                        null
+                    }
                 }
 
-                // Update name_counts for this new suffix
-                name_counts[cleaned_name] = suffix
+                if (resolved == null) {
+                    error "Could not resolve unique filename for ${base_name} after 1000 attempts"
+                }
+
+                new_path = resolved
+                new_name = new_path.getName()
 
                 // Rename the file
                 path.renameTo(new_path)
