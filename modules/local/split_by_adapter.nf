@@ -1,12 +1,12 @@
 process split_by_adapter {
     publishDir "${params.final_outdir}/${sample}/by_adapter", mode: 'copy', pattern: "by_adapter/*"
     tag "${sample}"
-    cpus = "${params.mincpus}"
-    memory = "${params.medmems}"
+    cpus = params.mincpus
+    memory = params.medmems
     errorStrategy 'retry'
     maxRetries 3
 
-    maxForks = "${params.maxcutadapts}"
+    maxForks = params.maxcutadapts
 
     when:
     params.split_by_adapter
