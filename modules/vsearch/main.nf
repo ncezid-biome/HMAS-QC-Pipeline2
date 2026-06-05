@@ -53,7 +53,7 @@ process denoising {
     publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "*.fasta"
     tag "${sample}"
     // debug true
-    cpus = params.mincpus
+    cpus params.mincpus
 
     input:
     tuple val(sample), path (fasta), path(ch_primer_file)
@@ -103,7 +103,7 @@ process denoising {
 process search_exact {
     publishDir "${params.final_outdir}/${sample}/temp", mode: 'copy'
     tag "${sample}"
-    cpus = params.medcpus
+    cpus params.medcpus
 
     input:
     tuple val(sample), path (output_fasta), path (final_unique_fasta)
