@@ -2,7 +2,7 @@ process hashing {
     publishDir "${params.final_outdir}/${sample}", mode: 'copy'
     tag "${sample}"
     // debug true
-    cpus = params.mincpus
+    cpus params.mincpus
 
     input:
     tuple val(sample), path (fasta)
