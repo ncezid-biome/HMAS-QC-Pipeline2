@@ -184,14 +184,13 @@ workflow {
 // Capture Nextflow pipeline completion stats and append to the log file
 workflow.onComplete {
     logMessage("step_mothur finished!")
-    def stats = workflow.stats
-    logMessage("  - Processes executed: ${stats.succeedCount}")
-    logMessage("  - Processes failed: ${stats.failedCount}")
-    logMessage("  - Processes cached: ${stats.cachedCount}")
+    logMessage("  - Processes executed: ${workflow.stats.succeedCount}")
+    logMessage("  - Processes failed: ${workflow.stats.failedCount}")
+    logMessage("  - Processes cached: ${workflow.stats.cachedCount}")
     logMessage("  - Workflow duration: ${workflow.duration}")
 }
 
 // Capture pipeline errors
-workflow.onError { 
+workflow.onError {
     logMessage("${workflow.errorReport}")
 }
