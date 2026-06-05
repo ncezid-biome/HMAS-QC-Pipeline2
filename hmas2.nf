@@ -179,18 +179,15 @@ workflow {
         .combine(combined_report_ch.read_length_mqc)
         .combine(make_command_yaml_ch.CLI)
         .combine(combined_report_ch.report_mqc), ch_config_for_multiqc, collected_versions)
-}
 
-// Capture Nextflow pipeline completion stats and append to the log file
-workflow.onComplete {
-    logMessage("step_mothur finished!")
-    logMessage("  - Processes executed: ${workflow.stats.succeedCount}")
-    logMessage("  - Processes failed: ${workflow.stats.failedCount}")
-    logMessage("  - Processes cached: ${workflow.stats.cachedCount}")
-    logMessage("  - Workflow duration: ${workflow.duration}")
-}
-
-// Capture pipeline errors
-workflow.onError {
-    logMessage("${workflow.errorReport}")
+    workflow.onComplete = {
+        logMessage("step_mothur finished!")
+        logMessage("  - Processes executed: ${workflow.stats.succeedCount}")
+        logMessage("  - Processes failed: ${workflow.stats.failedCount}")
+        logMessage("  - Processes cached: ${workflow.stats.cachedCount}")
+        logMessage("  - Workflow duration: ${workflow.duration}")
+        if (!workflow.success) {
+            logMessage("ERROR: ${workflow.errorReport}")
+        }
+    }
 }
