@@ -3,8 +3,8 @@ process make_count_table {
     publishDir "${params.final_outdir}/${sample}", pattern: "*.csv", mode: 'copy'
     tag "${sample}"
     // debug true
-    cpus = "${params.mincpus}"
-    memory = "${params.maxmems}"
+    cpus = params.mincpus
+    memory = params.maxmems
 
     input:
     tuple val(sample), path (match_file), path (fasta_file), path (ch_primer_file)

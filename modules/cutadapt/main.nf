@@ -5,12 +5,12 @@ process cutadapt {
     publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "cutadapt/*.discarded.*.fastq", enabled: params.save_trimmed
     publishDir "${params.final_outdir}/${sample}", mode: 'copy', pattern: "cutadapt/*.adapter_filter.csv"
     tag "${sample}"
-    cpus = "${params.maxcpus}"
-    memory = "${params.medmems}"
+    cpus = params.maxcpus
+    memory = params.medmems
     errorStrategy 'retry'
     maxRetries 3
 
-    maxForks = "${params.maxcutadapts}"
+    maxForks = params.maxcutadapts
 
     input:
     tuple val(sample), path(reads), path(ch_primer_file)
