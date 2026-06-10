@@ -13,7 +13,7 @@ fi
 
 echo "Looking for output in: $(pwd)"
 find . -maxdepth 1 -type d | sort
-latest_testoutput=$(find . -maxdepth 1 -type d -name 'test_output*' | sort -r | head -n 1)
+latest_testoutput=$(find . -maxdepth 1 -type d \( -name 'test_output*' -o -name 'hmas2_results*' \) | sort -r | head -n 1)
 
 if [ -z "$latest_testoutput" ]; then
   echo "ERROR: Could not find test output directory"
