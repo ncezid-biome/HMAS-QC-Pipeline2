@@ -5,17 +5,16 @@ process split_by_adapter {
     memory params.medmems
     errorStrategy 'retry'
     maxRetries 3
-
     maxForks params.maxcutadapts
-
-    when:
-    params.split_by_adapter
 
     input:
     tuple val(sample), path(matched_r1), path(matched_r2)
 
     output:
     path("by_adapter/*.fastq"), optional: true
+
+    when:
+    params.split_by_adapter
 
     shell:
     '''
