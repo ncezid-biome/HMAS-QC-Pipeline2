@@ -20,10 +20,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Install Nextflow
-        run: |
-          curl -s https://get.nextflow.io | bash
-          sudo mv nextflow /usr/local/bin/
+      - name: Set up Nextflow
+        uses: nf-core/setup-nextflow@v2
+        with:
+          version: "25.10.4"
 
       - name: Set up Singularity (via Apptainer)
         uses: eWaterCycle/setup-apptainer@v2
