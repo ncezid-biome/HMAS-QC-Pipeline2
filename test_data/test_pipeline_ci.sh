@@ -2,8 +2,6 @@
 
 cd ..
 nextflow run hmas2.nf -profile test,git_action,singularity
-echo "Looking for output in: $(pwd)"
-find . -maxdepth 1 -type d | sort
 NXF_EXIT=$?
 
 if [ $NXF_EXIT -ne 0 ]; then
@@ -11,8 +9,6 @@ if [ $NXF_EXIT -ne 0 ]; then
   exit 1
 fi
 
-echo "Looking for output in: $(pwd)"
-find . -maxdepth 1 -type d | sort
 latest_testoutput=$(find . -maxdepth 1 -type d \( -name 'test_output*' -o -name 'hmas2_results*' \) | sort -r | head -n 1)
 
 if [ -z "$latest_testoutput" ]; then
@@ -23,8 +19,6 @@ fi
 generated_csv="$latest_testoutput/report_sorted.csv"
 expected_csv="test_data/report_ref_sorted.csv"
 
-echo "Looking for output in: $(pwd)"
-find . -maxdepth 1 -type d | sort
 report_file=$(find "$latest_testoutput" -type f -name 'report*.csv')
 
 if [ -z "$report_file" ]; then
