@@ -17,7 +17,7 @@ class Primers:
     def reader(self, fname, pseqs):
         with open(fname, 'r') as infile:
             for line in infile:
-                if line.startswith("primer"):
+                # if line.startswith("primer"):
                     tmp = line.split('\t')
                     pseqs[tmp[3].strip('\n')] = [tmp[1], revcomp(tmp[2])]
 
