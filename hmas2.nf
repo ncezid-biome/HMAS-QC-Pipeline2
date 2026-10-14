@@ -9,6 +9,17 @@ def logMessage(String msg) {
     }
 }
 
+if (params.primer_type && params.primer_name) {
+	error "ERROR: --primer_type and --primer_name are mutually exclusive. Please provide only one."
+}
+
+if (!params.primer_type && !params.primer_name){
+	error "ERROR: Please select --primer_type or --primer_name"
+}
+
+include {seqFilter} from './modules/seqkit/main.nf'
+include {blastQuery} from './modules/blast/main.nf'
+include {pyReport} from './modules/pyReport/main.nf'
 include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
 include { cutadapt } from './modules/cutadapt/main.nf' 
 include { pair_merging } from './modules/pair_merging/main.nf' 
@@ -23,6 +34,9 @@ include { make_count_table } from './modules/local/make_count_table.nf'
 include { multiqc } from './modules/multiqc/main.nf' 
 
 workflow {
+
+    println "primer_type param received: ${params.primer_type}"
+	println "primer_name param received: ${params.primer_name}"
 
     logMessage("step_mothur started")
     logMessage("processing reads from: ${params.reads}")
@@ -117,6 +131,31 @@ workflow {
 
     unique_reads_ch.fasta.combine(ch_primer_file).set{ ch_for_denoising }
     denoisded_reads_ch = denoising(ch_for_denoising)
+
+    // input channel for path to database
+	db_ch = channel.fromPath(params.db_dir, type: 'dir').first()
+	// filter to include only sequences within given paramater(s)
+	if (params.primer_type) {
+	pattern_ch = channel.fromPath("${params.primer}")
+		.splitCsv(sep: '\t')
+		.filter {row -> row[0] == params.primer_type}
+		.map {row -> row[3]}
+		.collect()
+		.map{list -> list.join('|')}
+	}
+	else {
+		pattern_ch = channel.value(
+			params.primer_name.trim().split(/\s+/).join('|')
+			)
+	}
+
+    unique_fasta_only_ch = denoisded_reads_ch.unique.map { sample, fasta -> fasta }
+    seqFilter(unique_fasta_only_ch, pattern_ch)
+    blastQuery(seqFilter.out, db_ch, params.db_name)
+    nonempty_ch = blastQuery.out.filter { file -> file.size() > 0 }
+    pyReport(nonempty_ch)
+    collect_ch = pyReport.out
+	.collectFile(name: 'combined_reports.tsv', keepHeader: true, skip: 1, storeDir: "${params.final_outdir}/pyReport")
 
     before_search_ch = filered_reads_ch.fasta.join(denoisded_reads_ch.unique)
     match_file_ch = search_exact(before_search_ch)
