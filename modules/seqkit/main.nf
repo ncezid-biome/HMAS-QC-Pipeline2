@@ -1,6 +1,8 @@
 process seqFilter {
         publishDir "${params.final_outdir}/seqFilter", mode: 'copy'
-        input:
+        container 'community.wave.seqera.io/library/seqkit:2.13.0--05c0a96bf9fb2751'
+	tag "${input_files}"
+	input:
                 path input_files
                 val pattern
         output:
@@ -8,8 +10,6 @@ process seqFilter {
                 path "${input_files.baseName}_filtered.fasta"
         script:
         """
-ml seqkit/2.8.2
-
 seqkit grep -nrp "${pattern}" ${input_files} > ${input_files.baseName}_filtered.fasta
         """
 }
