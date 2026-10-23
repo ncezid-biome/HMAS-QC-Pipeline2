@@ -43,7 +43,7 @@ def main():
     df['sample_id'] = split_cols[2].str.replace(';size', '', regex=False)
     df['read_size'] = split_cols[3].astype(int)
 
-
+    # sort df by sseqid, read_size, then pident in order before subsetting sample with highest abundance
     df_sorted = df.sort_values(by=['sseqid', 'read_size', 'pident'], ascending=[True, False, False])
     df_top = df_sorted.groupby('sseqid').first().reset_index()
 
@@ -59,7 +59,7 @@ def main():
         (df_wide['Paratyphi_60_FR-Sal_RN5_01-0170'] >= 90) & (df_wide['Paratyphi_63_FR-2009K-1733']  >= 90) & (df_wide['typhi_82_FR-2009K-1733'] >= 90),
         (df_wide['Paratyphi_60_FR-Sal_RN5_01-0170'] < 90) & (df_wide['Paratyphi_63_FR-2009K-1733'] >= 90) & (df_wide['typhi_82_FR-2009K-1733'] >= 90)
     ]
-    call = ["S. bongori", "S. enterica", "retest"]
+    call = ["salmonella species unknown", "S. enterica", "retest"]
     df_wide['call'] = np.select(conditions, call, default = 'negative')
     df_wide.to_csv(args.output, sep = '\t', index = False)
     # print(df_wide)
