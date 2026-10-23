@@ -149,10 +149,10 @@ workflow {
 			)
 	}
 
-    unique_fasta_only_ch = denoisded_reads_ch.unique.map { sample, fasta -> fasta }
-    seqFilter(unique_fasta_only_ch, pattern_ch)
+//    unique_fasta_only_ch = denoisded_reads_ch.unique.map { sample, fasta -> fasta }
+    seqFilter(denoisded_reads_ch.unique, pattern_ch)
     blastQuery(seqFilter.out, db_ch, params.db_name)
-    nonempty_ch = blastQuery.out.filter { file -> file.size() > 0 }
+    nonempty_ch = blastQuery.out.filter {sample, file -> file.size() > 0 }
     pyReport(nonempty_ch)
     collect_ch = pyReport.out
 	.collectFile(name: 'combined_reports.tsv', keepHeader: true, skip: 1, storeDir: "${params.final_outdir}/pyReport")

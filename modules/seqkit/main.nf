@@ -1,15 +1,15 @@
 process seqFilter {
         publishDir "${params.final_outdir}/seqFilter", mode: 'copy'
         container 'community.wave.seqera.io/library/seqkit:2.13.0--05c0a96bf9fb2751'
-	tag "${input_files}"
+	tag "${sample}"
 	input:
-                path input_files
+                tuple val(sample), path(input_files)
                 val pattern
         output:
 
-                path "${input_files.baseName}_filtered.fasta"
+                tuple val(sample), path("${sample}_filtered.fasta")
         script:
         """
-seqkit grep -nrp "${pattern}" ${input_files} > ${input_files.baseName}_filtered.fasta
+seqkit grep -nrp "${pattern}" ${input_files} > ${sample}_filtered.fasta
         """
 }

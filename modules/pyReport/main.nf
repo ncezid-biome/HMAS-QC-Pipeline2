@@ -1,12 +1,12 @@
 process pyReport {
 	publishDir "${params.final_outdir}/pyReport", mode: 'copy'
-	tag "${input_files}"
+	tag "${sample}"
 	input:
-		path input_files
+		tuple val(sample), path (input_files)
 	output:
-		path "${input_files.baseName}_report.tsv"
+		path "${sample}_report.tsv"
 	script:
 	"""
-	create_primer_report.py --input ${input_files} --output ${input_files.baseName}_report.tsv
+	create_primer_report.py --input ${input_files} --output ${sample}_report.tsv
 	"""
 }
