@@ -1,5 +1,5 @@
 process pyReport {
-	publishDir "${params.final_outdir}/pyReport", mode: 'copy'
+	publishDir "${params.final_outdir}/${sample}/pyReport", mode: 'copy'
 	tag "${sample}"
 	input:
 		tuple val(sample), path (input_files)

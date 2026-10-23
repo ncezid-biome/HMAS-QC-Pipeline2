@@ -1,5 +1,5 @@
 process blastQuery {
-        publishDir "${params.final_outdir}/blastQuery", mode: 'copy'
+        publishDir "${params.final_outdir}/${sample}/blastQuery", mode: 'copy'
 	container 'community.wave.seqera.io/library/blast:2.17.0--d4fb881691596759'
 	tag "${sample}"
 	 input:

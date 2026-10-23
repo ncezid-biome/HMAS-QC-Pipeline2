@@ -1,5 +1,5 @@
 process seqFilter {
-        publishDir "${params.final_outdir}/seqFilter", mode: 'copy'
+        publishDir "${params.final_outdir}/${sample}/seqFilter", mode: 'copy'
         container 'community.wave.seqera.io/library/seqkit:2.13.0--05c0a96bf9fb2751'
 	tag "${sample}"
 	input:
