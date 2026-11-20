@@ -13,12 +13,18 @@ if (params.primer_type && params.primer_name) {
 	error "ERROR: --primer_type and --primer_name are mutually exclusive. Please provide only one."
 }
 
-if (!params.primer_type && !params.primer_name){
+if (!params.primer_type && !params.primer_name) {
 	error "ERROR: Please select --primer_type or --primer_name"
 }
 
+if (!params.reference) {
+    error "ERROR: Please provide --reference (multi-FASTA used to build BLAST database)"
+}
+
+include {hash_reference} from './modules/hash_reference/main.nf'
 include {seqFilter} from './modules/seqkit/main.nf'
-include {blastQuery} from './modules/blast/main.nf'
+include {blastDB} from './modules/blast/blastDB.nf'
+include {blastQuery} from './modules/blast/blastQuery.nf'
 include {pyReport} from './modules/pyReport/main.nf'
 include { FASTQC as FASTQC_RAW } from './modules/fastqc/main.nf' 
 include { cutadapt } from './modules/cutadapt/main.nf' 
@@ -37,6 +43,7 @@ workflow {
 
     println "primer_type param received: ${params.primer_type}"
 	println "primer_name param received: ${params.primer_name}"
+    println "reference param received: ${params.reference}"
 
     logMessage("step_mothur started")
     logMessage("processing reads from: ${params.reads}")
@@ -133,7 +140,7 @@ workflow {
     denoisded_reads_ch = denoising(ch_for_denoising)
 
     // input channel for path to database
-	db_ch = channel.fromPath(params.db_dir, type: 'dir').first()
+	//db_ch = channel.fromPath(params.db_dir, type: 'dir').first()
 	// filter to include only sequences within given paramater(s)
 	if (params.primer_type) {
 	pattern_ch = channel.fromPath("${params.primer}")
@@ -150,12 +157,15 @@ workflow {
 	}
 
 //    unique_fasta_only_ch = denoisded_reads_ch.unique.map { sample, fasta -> fasta }
+    reference_ch = channel.fromPath("${params.reference}", checkIfExists: true)
+    hashed_ch = hash_reference(reference_ch)
+    blastDB(hashed_ch.hashed_fasta)
     seqFilter(denoisded_reads_ch.unique, pattern_ch)
-    blastQuery(seqFilter.out, db_ch, params.db_name)
+    blastQuery(seqFilter.out, blastDB.out.first())
     nonempty_ch = blastQuery.out.filter {sample, file -> file.size() > 0 }
-    pyReport(nonempty_ch)
+    pyReport(nonempty_ch, hashed_ch.translation_table.first())
     collect_ch = pyReport.out
-	.collectFile(name: 'combined_reports.tsv', keepHeader: true, skip: 1, storeDir: "${params.final_outdir}/pyReport")
+	.collectFile(name: 'species_id.tsv', keepHeader: true, skip: 1, storeDir: "${params.final_outdir}/pyReport")
 
     before_search_ch = filered_reads_ch.fasta.join(denoisded_reads_ch.unique)
     match_file_ch = search_exact(before_search_ch)

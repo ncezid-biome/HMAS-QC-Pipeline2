@@ -49,25 +49,27 @@ By default, the pipeline runs the following [workflow](#workflow):
  1. **Test with the default test_data**:  
      - Run the following: `nextflow run hmas2.nf -profile test`  with conda  or `nextflow run hmas2.nf -profile test,singularity` with docker image.  
  Depends on your hardware, the test run should be completed in a few minutes. And the output will be in the `test_output` folder  
-     - Alternatively, change directory to the **test_data** folder, and run the following: `./test_pipeline.sh`  
+     - Alternatively, change directory to the **test_data** folder, and run the following: `./test_pipeline.sh` or `bash test_pipeline.sh`
      The script will automatically run the pipeline with the default test data and compare the output to the expected result and print out **'PASSED ! CSV files match'** if the results match, or **WARNING messages** otherwise.  
 
 2. **Test with your own data** - Make sure to provide path for the 3 required parameters in **nextflow.config** file.    
 
     -  **params.reads**: this is the path to your paired demultiplexed fastq files (for each sample). And make sure they have a `*_R{1,2}*.fastq.gz` pattern. The pipeline will recursively retrieve reads files with that pattern. 
     -  **params.outdir**: this is the folder for your output which contains all the subfolders (one for each sample).   
-    -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer' (though any identifier can be in this column), forward_primer, reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1`    
+    -  **params.primer**: this is the path to your primer-pair file which lists your primer infomation, and it's 4 column (tab delimited) file with the format as: 'primer' (though any identifier can be in this column), forward_primer, reverse_primer and primer name, i.e.,  `primer  CACGCATCATTTCGCAAAAGC   AGTACGTTCGGCCTCTTTCAG   OG0001079primerGroup1` 
+    - **params.primer_type** OR **params.primer_name**: TO BE COMPLETED
+    - **params.reference**: TO BE COMPLETED   
 
     **Run the following**:  
     `nextflow run hmas2.nf`  with conda, or  `nextflow run hmas2.nf -profile singularity`  with docker image    
 
     **note:**  
-    - the alternative is to provide those 3 parameters at the command line, for example:  
- `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER`    
+    - the alternative is to provide those 6 parameters at the command line, for example:  
+ `nextflow run hmas2.nf --reads YOUR_READS --outdir YOUR_OUTPUT --primer YOUR_PRIMER --{primer_type | primer_name} YOUR_SEQUENCES --reference YOUR_REFERENCE`    
     - you can also `qsub` running the pipeline on a remote server. We have a `qsub_sm.sh` script you can use as a reference.  
 
 3. **nextflow.config file**:  
-Feel free to update the file as necessary. It is recommended to specify `params.reads, params.outdir, and params.primer`. Additionally, adjust the `CPU, memory, and params.maxcutadapts` parameters based on your available computing resources. Leave the remaining parameters unchanged until you are confident in running the pipeline.   
+Feel free to update the file as necessary. It is recommended to specify `params.reads, params.outdir, params.primer, params.{primer_type | primer_name} and params.reference`. Additionally, adjust the `CPU, memory, and params.maxcutadapts` parameters based on your available computing resources. Leave the remaining parameters unchanged until you are confident in running the pipeline.   
 Particularly we include the multiqc report header information here which you adjust as needed.   
 
 4.  **multiqc_config.yaml file in bin/ folder**:  
